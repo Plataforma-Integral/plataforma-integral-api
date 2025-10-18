@@ -8,7 +8,7 @@ namespace PlataformaIntegral.API.Models;
 
 [Table("tipo_moneda")]
 [Index("Codigo", Name = "UQ__tipo_mon__40F9A20675801CCA", IsUnique = true)]
-public partial class TipoMonedum
+public partial class TipoMoneda
 {
     [Key]
     [Column("id_tipo_moneda")]
@@ -24,6 +24,5 @@ public partial class TipoMonedum
     [Unicode(false)]
     public string Nombre { get; set; } = null!;
 
-    [InverseProperty("IdTipoMonedaNavigation")]
     public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 }

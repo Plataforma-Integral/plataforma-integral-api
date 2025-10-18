@@ -27,10 +27,8 @@ public partial class ReseñaCurso
     public string? Comentario { get; set; }
 
     [ForeignKey("IdCurso")]
-    [InverseProperty("ReseñaCursos")]
-    public virtual Curso IdCursoNavigation { get; set; } = null!;
+    public virtual Curso Curso { get; set; } = null!;
 
     [ForeignKey("IdEstudiante")]
-    [InverseProperty("ReseñaCursos")]
-    public virtual Estudiante IdEstudianteNavigation { get; set; } = null!;
+    public virtual Estudiante Estudiante { get; set; } = null!;
 }

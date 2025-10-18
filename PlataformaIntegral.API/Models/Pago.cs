@@ -43,26 +43,20 @@ public partial class Pago
     public decimal? Monto { get; set; }
 
     [ForeignKey("IdEstadoPago")]
-    [InverseProperty("Pagos")]
-    public virtual EstadoPago IdEstadoPagoNavigation { get; set; } = null!;
+    public virtual EstadoPago EstadoPago { get; set; } = null!;
 
     [ForeignKey("IdMetodoPago")]
-    [InverseProperty("Pagos")]
-    public virtual MetodoPago IdMetodoPagoNavigation { get; set; } = null!;
+    public virtual MetodoPago MetodoPago { get; set; } = null!;
 
     [ForeignKey("IdProducto")]
-    [InverseProperty("Pagos")]
-    public virtual Producto IdProductoNavigation { get; set; } = null!;
+    public virtual Producto Producto { get; set; } = null!;
 
     [ForeignKey("IdRecibo")]
-    [InverseProperty("Pagos")]
-    public virtual Recibo? IdReciboNavigation { get; set; }
+    public virtual Recibo? Recibo { get; set; }
 
     [ForeignKey("IdTipoMoneda")]
-    [InverseProperty("Pagos")]
-    public virtual TipoMonedum IdTipoMonedaNavigation { get; set; } = null!;
+    public virtual TipoMoneda TipoMoneda { get; set; } = null!;
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("Pagos")]
-    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
+    public virtual Usuario Usuario { get; set; } = null!;
 }

@@ -17,13 +17,10 @@ public partial class SuscripcionTipo
     public int DuracionMeses { get; set; }
 
     [ForeignKey("IdProducto")]
-    [InverseProperty("SuscripcionTipo")]
-    public virtual Producto IdProductoNavigation { get; set; } = null!;
+    public virtual Producto Producto { get; set; } = null!;
 
-    [InverseProperty("IdSuscripcionTipoNavigation")]
     public virtual ICollection<Suscripcion> Suscripciones { get; set; } = new List<Suscripcion>();
 
     [ForeignKey("IdSuscripcionTipo")]
-    [InverseProperty("IdSuscripcionTipos")]
-    public virtual ICollection<Curso> IdCursos { get; set; } = new List<Curso>();
+    public virtual ICollection<Curso> Cursos { get; set; } = new List<Curso>();
 }

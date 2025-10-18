@@ -70,35 +70,25 @@ public partial class Usuario
     [Column("fecha_registro", TypeName = "datetime")]
     public DateTime? FechaRegistro { get; set; }
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual Administrador? Administrador { get; set; }
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual ConfiguracionPrivacidad? ConfiguracionPrivacidad { get; set; }
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual ICollection<Credencial> Credenciales { get; set; } = new List<Credencial>();
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual Estudiante? Estudiante { get; set; }
 
     [ForeignKey("IdPais")]
-    [InverseProperty("Usuarios")]
-    public virtual Pais? IdPaisNavigation { get; set; }
+    public virtual Pais? Pais { get; set; }
 
     [ForeignKey("IdTipoUsuario")]
-    [InverseProperty("Usuarios")]
-    public virtual TipoUsuario? IdTipoUsuarioNavigation { get; set; }
+    public virtual TipoUsuario? TipoUsuario { get; set; }
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual Profesor? Profesor { get; set; }
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual ICollection<Recibo> Recibos { get; set; } = new List<Recibo>();
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual ICollection<Suscripcion> Suscripciones { get; set; } = new List<Suscripcion>();
 }

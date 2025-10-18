@@ -22,14 +22,11 @@ public partial class ProfesorCurso
     public int? IdTipoRol { get; set; }
 
     [ForeignKey("IdCurso")]
-    [InverseProperty("ProfesorCursos")]
-    public virtual Curso IdCursoNavigation { get; set; } = null!;
+    public virtual Curso Curso{ get; set; } = null!;
 
     [ForeignKey("IdProfesor")]
-    [InverseProperty("ProfesorCursos")]
-    public virtual Profesor IdProfesorNavigation { get; set; } = null!;
+    public virtual Profesor Profesor { get; set; } = null!;
 
     [ForeignKey("IdTipoRol")]
-    [InverseProperty("ProfesorCursos")]
-    public virtual TipoRol? IdTipoRolNavigation { get; set; }
+    public virtual TipoRol? TipoRol { get; set; }
 }

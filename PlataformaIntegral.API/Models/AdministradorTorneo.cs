@@ -23,14 +23,11 @@ public partial class AdministradorTorneo
     public int? IdTipoRol { get; set; }
 
     [ForeignKey("IdAdministrador")]
-    [InverseProperty("AdministradorTorneos")]
-    public virtual Administrador IdAdministradorNavigation { get; set; } = null!;
+    public virtual Administrador Administrador { get; set; } = null!;
 
     [ForeignKey("IdTipoRol")]
-    [InverseProperty("AdministradorTorneos")]
-    public virtual TipoRol? IdTipoRolNavigation { get; set; }
+    public virtual TipoRol? TipoRol { get; set; }
 
     [ForeignKey("IdTorneo")]
-    [InverseProperty("AdministradorTorneos")]
-    public virtual Torneo IdTorneoNavigation { get; set; } = null!;
+    public virtual Torneo Torneo { get; set; } = null!;
 }

@@ -24,20 +24,15 @@ public partial class Profesor
     [Unicode(false)]
     public string? Disponibilidad { get; set; }
 
-    [InverseProperty("IdProfesorNavigation")]
     public virtual ICollection<Clase> Clases { get; set; } = new List<Clase>();
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("Profesor")]
-    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
+    public virtual Usuario Usuario { get; set; } = null!;
 
-    [InverseProperty("IdProfesorNavigation")]
     public virtual ICollection<ProfesorCurso> ProfesorCursos { get; set; } = new List<ProfesorCurso>();
 
-    [InverseProperty("IdProfesorNavigation")]
-    public virtual ICollection<ReseñaProfesor> ReseñaProfesores { get; set; } = new List<ReseñaProfesor>();
+    public virtual ICollection<ReseñaProfesor> ReseñasProfesor { get; set; } = new List<ReseñaProfesor>();
 
     [ForeignKey("IdProfesor")]
-    [InverseProperty("IdProfesors")]
-    public virtual ICollection<Categoria> IdCategoria { get; set; } = new List<Categoria>();
+    public virtual ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();
 }

@@ -12,6 +12,13 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<PlataformaIntegralContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("PlataformaIntegralDB")));
 
+// Servicios previos...
+builder.Services.AddControllers();
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+// Registrar AutoMapper escaneando todo el ensamblado de Profiles
+builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 
 var app = builder.Build();
 

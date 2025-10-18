@@ -19,6 +19,5 @@ public partial class EstadoSuscripcion
     [Unicode(false)]
     public string Nombre { get; set; } = null!;
 
-    [InverseProperty("IdEstadoSuscripcionNavigation")]
     public virtual ICollection<Suscripcion> Suscripciones { get; set; } = new List<Suscripcion>();
 }

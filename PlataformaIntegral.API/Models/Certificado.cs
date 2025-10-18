@@ -17,14 +17,11 @@ public partial class Certificado
     public int IdCurso { get; set; }
 
     [ForeignKey("IdCurso")]
-    [InverseProperty("Certificados")]
-    public virtual Curso IdCursoNavigation { get; set; } = null!;
+    public virtual Curso Curso { get; set; } = null!;
 
     [ForeignKey("IdRecurso")]
-    [InverseProperty("Certificado")]
-    public virtual Recurso IdRecursoNavigation { get; set; } = null!;
+    public virtual Recurso Recurso { get; set; } = null!;
 
     [ForeignKey("IdCertificado")]
-    [InverseProperty("IdCertificados")]
-    public virtual ICollection<Estudiante> IdEstudiantes { get; set; } = new List<Estudiante>();
+    public virtual ICollection<Estudiante> Estudiantes { get; set; } = new List<Estudiante>();
 }

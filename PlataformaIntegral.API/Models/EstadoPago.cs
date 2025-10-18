@@ -19,9 +19,7 @@ public partial class EstadoPago
     [Unicode(false)]
     public string Nombre { get; set; } = null!;
 
-    [InverseProperty("IdEstadoPagoNavigation")]
     public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 
-    [InverseProperty("IdEstadoPagoNavigation")]
     public virtual ICollection<Recibo> Recibos { get; set; } = new List<Recibo>();
 }

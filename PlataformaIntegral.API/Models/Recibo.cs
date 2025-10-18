@@ -36,13 +36,10 @@ public partial class Recibo
     public int? IdEstadoPago { get; set; }
 
     [ForeignKey("IdEstadoPago")]
-    [InverseProperty("Recibos")]
-    public virtual EstadoPago? IdEstadoPagoNavigation { get; set; }
+    public virtual EstadoPago? EstadoPago { get; set; }
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("Recibos")]
-    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
+    public virtual Usuario Usuario { get; set; } = null!;
 
-    [InverseProperty("IdReciboNavigation")]
     public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 }

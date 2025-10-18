@@ -20,10 +20,8 @@ public partial class Cuestionario
     public int? NumeroOrden { get; set; }
 
     [ForeignKey("IdCapitulo")]
-    [InverseProperty("Cuestionarios")]
-    public virtual Capitulo IdCapituloNavigation { get; set; } = null!;
+    public virtual Capitulo Capitulo{ get; set; } = null!;
 
     [ForeignKey("IdRecurso")]
-    [InverseProperty("Cuestionario")]
-    public virtual Recurso IdRecursoNavigation { get; set; } = null!;
+    public virtual Recurso Recurso { get; set; } = null!;
 }

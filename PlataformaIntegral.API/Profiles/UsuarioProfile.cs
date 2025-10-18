@@ -10,12 +10,14 @@ namespace PlataformaIntegral.API.Profiles
         {
             // Mapeo automático
             CreateMap<UsuarioCreateDto, Usuario>();
+            CreateMap<CredencialCreateDto, Credencial>();
+            CreateMap<ConfigPrivacidadCreateDto, ConfiguracionPrivacidad>();
 
             // Mapeo manual para ReadDto (planos)
             CreateMap<Usuario, UsuarioReadDto>()
                 .ForMember(dest => dest.Pais, opt => opt.MapFrom(src => src.Pais.Nombre))
-                .ForMember(dest => dest.TipoUsuario, opt => opt.MapFrom(src => src.TipoUsuario.Nombre))
-                .ForMember(dest => dest.Credencial, opt => opt.Ignore()); // ignorar contraseñas
+                .ForMember(dest => dest.TipoUsuario, opt => opt.MapFrom(src => src.TipoUsuario.Nombre));
+            
         }
     }
 }

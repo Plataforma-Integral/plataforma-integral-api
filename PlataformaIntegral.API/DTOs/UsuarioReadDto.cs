@@ -29,9 +29,9 @@ namespace PlataformaIntegral.API.DTOs
 
         public DateOnly? FechaNacimiento { get; set; }
 
-        public int? IdTipoUsuario { get; set; }
+        public string? TipoUsuario { get; set; }
 
-        public int? IdPais { get; set; }
+        public string? Pais { get; set; }
 
         [StringLength(80)]
         public string? Departamento { get; set; }
@@ -45,10 +45,11 @@ namespace PlataformaIntegral.API.DTOs
         public DateTime? FechaRegistro { get; set; }
 
         public ConfiguracionPrivacidad? ConfiguracionPrivacidad { get; set; }
-
+        //Clases que se llenaran dependiendo del tipo de usuario
         public Estudiante? Estudiante { get; set; }
         public Profesor? Profesor { get; set; }
         public Administrador? Administrador { get; set; }
-        public Pais? IdPaisNavigation { get; set; }
+
+        // Nota: No incluir la propiedad Credencial para evitar exponer contraseñas
     }
 }

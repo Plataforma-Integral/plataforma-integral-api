@@ -37,6 +37,5 @@ public partial class Credencial
     public DateTime? FechaCreacion { get; set; }
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("Credencials")]
-    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
+    public virtual Usuario Usuario { get; set; } = null!;
 }

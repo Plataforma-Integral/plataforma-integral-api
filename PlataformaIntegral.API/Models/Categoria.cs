@@ -27,25 +27,17 @@ public partial class Categoria
     public int? IdSuperCategoria { get; set; }
 
     [ForeignKey("IdSuperCategoria")]
-    [InverseProperty("InverseIdSuperCategoriaNavigation")]
-    public virtual Categoria? IdSuperCategoriaNavigation { get; set; }
+    [InverseProperty("SubCategorias")]
+    public virtual Categoria? SuperCategoria { get; set; }
 
-    [InverseProperty("IdSuperCategoriaNavigation")]
-    public virtual ICollection<Categoria> InverseIdSuperCategoriaNavigation { get; set; } = new List<Categoria>();
+    [InverseProperty("SuperCategoria")]
+    public virtual ICollection<Categoria> SubCategorias { get; set; } = new List<Categoria>();
 
-    [ForeignKey("IdCategoria")]
-    [InverseProperty("IdCategoria")]
-    public virtual ICollection<Curso> IdCursos { get; set; } = new List<Curso>();
+    public virtual ICollection<Curso> Cursos { get; set; } = new List<Curso>();
 
-    [ForeignKey("IdCategoria")]
-    [InverseProperty("IdCategoria")]
-    public virtual ICollection<Estudiante> IdEstudiantes { get; set; } = new List<Estudiante>();
+    public virtual ICollection<Estudiante> Estudiantes { get; set; } = new List<Estudiante>();
 
-    [ForeignKey("IdCategoria")]
-    [InverseProperty("IdCategoria")]
-    public virtual ICollection<Profesor> IdProfesors { get; set; } = new List<Profesor>();
+    public virtual ICollection<Profesor> Profesores { get; set; } = new List<Profesor>();
 
-    [ForeignKey("IdCategoria")]
-    [InverseProperty("IdCategoria")]
-    public virtual ICollection<Torneo> IdTorneos { get; set; } = new List<Torneo>();
+    public virtual ICollection<Torneo> Torneos { get; set; } = new List<Torneo>();
 }

@@ -24,10 +24,8 @@ public partial class EstudianteProgreso
     public string? Estado { get; set; }
 
     [ForeignKey("IdEstudiante")]
-    [InverseProperty("EstudianteProgresos")]
-    public virtual Estudiante IdEstudianteNavigation { get; set; } = null!;
+    public virtual Estudiante Estudiante { get; set; } = null!;
 
     [ForeignKey("IdRecurso")]
-    [InverseProperty("EstudianteProgresos")]
-    public virtual Recurso IdRecursoNavigation { get; set; } = null!;
+    public virtual Recurso Recurso { get; set; } = null!;
 }

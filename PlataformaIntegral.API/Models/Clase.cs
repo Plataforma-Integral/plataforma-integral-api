@@ -35,17 +35,13 @@ public partial class Clase
     [Column("hora")]
     public TimeOnly? Hora { get; set; }
 
-    [InverseProperty("IdClaseNavigation")]
     public virtual ClasePresencial? ClasePresencial { get; set; }
 
-    [InverseProperty("IdClaseNavigation")]
     public virtual ClaseVirtual? ClaseVirtual { get; set; }
 
     [ForeignKey("IdCursoSincronico")]
-    [InverseProperty("Clases")]
-    public virtual CursoSincronico IdCursoSincronicoNavigation { get; set; } = null!;
+    public virtual CursoSincronico CursoSincronico{ get; set; } = null!;
 
     [ForeignKey("IdProfesor")]
-    [InverseProperty("Clases")]
-    public virtual Profesor IdProfesorNavigation { get; set; } = null!;
+    public virtual Profesor Profesor { get; set; } = null!;
 }

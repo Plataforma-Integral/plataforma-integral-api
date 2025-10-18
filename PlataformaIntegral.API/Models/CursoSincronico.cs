@@ -22,14 +22,11 @@ public partial class CursoSincronico
     [Column("duracion")]
     public int? Duracion { get; set; }
 
-    [InverseProperty("IdCursoSincronicoNavigation")]
     public virtual ICollection<Clase> Clases { get; set; } = new List<Clase>();
 
     [ForeignKey("IdCurso")]
-    [InverseProperty("CursoSincronico")]
-    public virtual Curso IdCursoNavigation { get; set; } = null!;
+    public virtual Curso Curso { get; set; } = null!;
 
     [ForeignKey("IdModalidad")]
-    [InverseProperty("CursoSincronicos")]
-    public virtual ModalidadSincronico? IdModalidadNavigation { get; set; }
+    public virtual ModalidadSincronico? Modalidad { get; set; }
 }

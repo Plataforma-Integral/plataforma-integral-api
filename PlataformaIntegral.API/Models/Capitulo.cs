@@ -30,13 +30,10 @@ public partial class Capitulo
     [Column("numero_orden")]
     public int? NumeroOrden { get; set; }
 
-    [InverseProperty("IdCapituloNavigation")]
     public virtual ICollection<Cuestionario> Cuestionarios { get; set; } = new List<Cuestionario>();
 
     [ForeignKey("IdCursoPregrabado")]
-    [InverseProperty("Capitulos")]
-    public virtual CursoPregrabado IdCursoPregrabadoNavigation { get; set; } = null!;
+    public virtual CursoPregrabado CursoPregrabado { get; set; } = null!;
 
-    [InverseProperty("IdCapituloNavigation")]
     public virtual ICollection<Video> Videos { get; set; } = new List<Video>();
 }

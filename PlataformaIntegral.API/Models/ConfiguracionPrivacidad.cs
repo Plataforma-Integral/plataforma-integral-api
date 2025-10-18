@@ -29,6 +29,5 @@ public partial class ConfiguracionPrivacidad
     public bool? MostrarMedallas { get; set; }
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("ConfiguracionPrivacidad")]
-    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
+    public virtual Usuario Usuario { get; set; } = null!;
 }

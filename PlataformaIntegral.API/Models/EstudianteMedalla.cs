@@ -22,10 +22,8 @@ public partial class EstudianteMedalla
     public DateOnly? FechaOtorgada { get; set; }
 
     [ForeignKey("IdMedalla")]
-    [InverseProperty("EstudianteMedallas")]
-    public virtual Medalla IdMedallaNavigation { get; set; } = null!;
+    public virtual Medalla Medalla { get; set; } = null!;
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("EstudianteMedallas")]
-    public virtual Estudiante IdUsuarioNavigation { get; set; } = null!;
+    public virtual Estudiante Usuario { get; set; } = null!;
 }

@@ -19,6 +19,5 @@ public partial class ModalidadSincronico
     [Unicode(false)]
     public string Nombre { get; set; } = null!;
 
-    [InverseProperty("IdModalidadNavigation")]
     public virtual ICollection<CursoSincronico> CursoSincronicos { get; set; } = new List<CursoSincronico>();
 }

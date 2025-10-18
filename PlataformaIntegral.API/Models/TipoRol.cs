@@ -19,9 +19,7 @@ public partial class TipoRol
     [Unicode(false)]
     public string Nombre { get; set; } = null!;
 
-    [InverseProperty("IdTipoRolNavigation")]
     public virtual ICollection<AdministradorTorneo> AdministradorTorneos { get; set; } = new List<AdministradorTorneo>();
 
-    [InverseProperty("IdTipoRolNavigation")]
     public virtual ICollection<ProfesorCurso> ProfesorCursos { get; set; } = new List<ProfesorCurso>();
 }

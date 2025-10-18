@@ -19,6 +19,5 @@ public partial class NivelMedalla
     [Unicode(false)]
     public string Nombre { get; set; } = null!;
 
-    [InverseProperty("IdNivelMedallaNavigation")]
     public virtual ICollection<Medalla> Medallas { get; set; } = new List<Medalla>();
 }

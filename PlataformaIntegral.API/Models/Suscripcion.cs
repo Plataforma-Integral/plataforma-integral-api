@@ -29,14 +29,11 @@ public partial class Suscripcion
     public int? IdEstadoSuscripcion { get; set; }
 
     [ForeignKey("IdEstadoSuscripcion")]
-    [InverseProperty("Suscripcions")]
-    public virtual EstadoSuscripcion? IdEstadoSuscripcionNavigation { get; set; }
+    public virtual EstadoSuscripcion? EstadoSuscripcion { get; set; }
 
     [ForeignKey("IdSuscripcionTipo")]
-    [InverseProperty("Suscripcions")]
-    public virtual SuscripcionTipo? IdSuscripcionTipoNavigation { get; set; }
+    public virtual SuscripcionTipo? SuscripcionTipo { get; set; }
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("Suscripcions")]
-    public virtual Usuario? IdUsuarioNavigation { get; set; }
+    public virtual Usuario? Usuario { get; set; }
 }

@@ -40,7 +40,6 @@ namespace PlataformaIntegral.API.DTOs
 
         [Required]
         public CredencialCreateDto Credencial { get; set; } = null!;
-        [Required]
         public ConfigPrivacidadCreateDto Config { get; set; } = null!;
     }
 }

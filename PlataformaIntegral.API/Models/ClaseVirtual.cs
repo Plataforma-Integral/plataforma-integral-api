@@ -19,6 +19,5 @@ public partial class ClaseVirtual
     public string? Url { get; set; }
 
     [ForeignKey("IdClase")]
-    [InverseProperty("ClaseVirtual")]
-    public virtual Clase IdClaseNavigation { get; set; } = null!;
+    public virtual Clase Clase { get; set; } = null!;
 }

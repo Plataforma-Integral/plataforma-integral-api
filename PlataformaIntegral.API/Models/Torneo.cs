@@ -28,17 +28,13 @@ public partial class Torneo
     [Unicode(false)]
     public string? Modalidad { get; set; }
 
-    [InverseProperty("IdTorneoNavigation")]
     public virtual ICollection<AdministradorTorneo> AdministradorTorneos { get; set; } = new List<AdministradorTorneo>();
 
-    [InverseProperty("IdTorneoNavigation")]
     public virtual ICollection<Medalla> Medallas { get; set; } = new List<Medalla>();
 
     [ForeignKey("IdTorneo")]
-    [InverseProperty("IdTorneos")]
-    public virtual ICollection<Categoria> IdCategoria { get; set; } = new List<Categoria>();
+    public virtual ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();
 
     [ForeignKey("IdTorneo")]
-    [InverseProperty("IdTorneos")]
-    public virtual ICollection<Estudiante> IdEstudiantes { get; set; } = new List<Estudiante>();
+    public virtual ICollection<Estudiante> Estudiantes { get; set; } = new List<Estudiante>();
 }

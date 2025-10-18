@@ -30,12 +30,9 @@ public partial class Producto
     [Column("fecha_creacion", TypeName = "datetime")]
     public DateTime? FechaCreacion { get; set; }
 
-    [InverseProperty("IdProductoNavigation")]
     public virtual Curso? Curso { get; set; }
 
-    [InverseProperty("IdProductoNavigation")]
     public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 
-    [InverseProperty("IdProductoNavigation")]
     public virtual SuscripcionTipo? SuscripcionTipo { get; set; }
 }

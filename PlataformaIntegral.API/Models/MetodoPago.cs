@@ -19,6 +19,5 @@ public partial class MetodoPago
     [Unicode(false)]
     public string Nombre { get; set; } = null!;
 
-    [InverseProperty("IdMetodoPagoNavigation")]
     public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
 }

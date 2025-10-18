@@ -17,10 +17,8 @@ public partial class Documento
     public int? IdVideo { get; set; }
 
     [ForeignKey("IdRecurso")]
-    [InverseProperty("Documento")]
-    public virtual Recurso IdRecursoNavigation { get; set; } = null!;
+    public virtual Recurso Recurso { get; set; } = null!;
 
     [ForeignKey("IdVideo")]
-    [InverseProperty("Documentos")]
-    public virtual Video? IdVideoNavigation { get; set; }
+    public virtual Video? Video { get; set; }
 }

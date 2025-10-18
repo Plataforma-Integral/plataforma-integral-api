@@ -29,14 +29,11 @@ public partial class Video
     [Unicode(false)]
     public string? Tipo { get; set; }
 
-    [InverseProperty("IdVideoNavigation")]
     public virtual ICollection<Documento> Documentos { get; set; } = new List<Documento>();
 
     [ForeignKey("IdCapitulo")]
-    [InverseProperty("Videos")]
-    public virtual Capitulo IdCapituloNavigation { get; set; } = null!;
+    public virtual Capitulo Capitulo { get; set; } = null!;
 
     [ForeignKey("IdRecurso")]
-    [InverseProperty("Video")]
-    public virtual Recurso IdRecursoNavigation { get; set; } = null!;
+    public virtual Recurso Recurso { get; set; } = null!;
 }

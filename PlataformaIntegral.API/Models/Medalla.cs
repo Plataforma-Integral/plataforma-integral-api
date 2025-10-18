@@ -34,14 +34,11 @@ public partial class Medalla
     [Unicode(false)]
     public string? UrlImagen { get; set; }
 
-    [InverseProperty("IdMedallaNavigation")]
     public virtual ICollection<EstudianteMedalla> EstudianteMedallas { get; set; } = new List<EstudianteMedalla>();
 
     [ForeignKey("IdNivelMedalla")]
-    [InverseProperty("Medallas")]
-    public virtual NivelMedalla? IdNivelMedallaNavigation { get; set; }
+    public virtual NivelMedalla? NivelMedalla { get; set; }
 
     [ForeignKey("IdTorneo")]
-    [InverseProperty("Medallas")]
-    public virtual Torneo? IdTorneoNavigation { get; set; }
+    public virtual Torneo? Torneo { get; set; }
 }

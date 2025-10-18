@@ -23,6 +23,5 @@ public partial class Pais
     [Unicode(false)]
     public string? CodigoIso { get; set; }
 
-    [InverseProperty("IdPaisNavigation")]
     public virtual ICollection<Usuario> Usuarios { get; set; } = new List<Usuario>();
 }

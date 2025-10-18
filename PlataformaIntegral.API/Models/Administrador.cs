@@ -19,10 +19,8 @@ public partial class Administrador
     [Unicode(false)]
     public string? Rol { get; set; }
 
-    [InverseProperty("IdAdministradorNavigation")]
     public virtual ICollection<AdministradorTorneo> AdministradorTorneos { get; set; } = new List<AdministradorTorneo>();
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("Administrador")]
-    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
+    public virtual Usuario Usuario { get; set; } = null!;
 }

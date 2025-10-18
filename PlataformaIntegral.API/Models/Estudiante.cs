@@ -24,31 +24,23 @@ public partial class Estudiante
     [Column("puntos")]
     public int? Puntos { get; set; }
 
-    [InverseProperty("IdUsuarioNavigation")]
     public virtual ICollection<EstudianteMedalla> EstudianteMedallas { get; set; } = new List<EstudianteMedalla>();
 
-    [InverseProperty("IdEstudianteNavigation")]
     public virtual ICollection<EstudianteProgreso> EstudianteProgresos { get; set; } = new List<EstudianteProgreso>();
 
     [ForeignKey("IdUsuario")]
-    [InverseProperty("Estudiante")]
-    public virtual Usuario IdUsuarioNavigation { get; set; } = null!;
+    public virtual Usuario Usuario { get; set; } = null!;
 
-    [InverseProperty("IdEstudianteNavigation")]
     public virtual ICollection<ReseñaCurso> ReseñaCursos { get; set; } = new List<ReseñaCurso>();
 
-    [InverseProperty("IdEstudianteNavigation")]
     public virtual ICollection<ReseñaProfesor> ReseñaProfesores { get; set; } = new List<ReseñaProfesor>();
 
-    [ForeignKey("IdEstudiante")]
-    [InverseProperty("IdEstudiantes")]
-    public virtual ICollection<Categoria> IdCategoria { get; set; } = new List<Categoria>();
+    [ForeignKey("Estudiante")]
+    public virtual ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();
 
-    [ForeignKey("IdEstudiante")]
-    [InverseProperty("IdEstudiantes")]
-    public virtual ICollection<Certificado> IdCertificados { get; set; } = new List<Certificado>();
+    [ForeignKey("Estudiante")]
+    public virtual ICollection<Certificado> Certificados { get; set; } = new List<Certificado>();
 
-    [ForeignKey("IdEstudiante")]
-    [InverseProperty("IdEstudiantes")]
-    public virtual ICollection<Torneo> IdTorneos { get; set; } = new List<Torneo>();
+    [ForeignKey("Estudiante")]
+    public virtual ICollection<Torneo> Torneos { get; set; } = new List<Torneo>();
 }

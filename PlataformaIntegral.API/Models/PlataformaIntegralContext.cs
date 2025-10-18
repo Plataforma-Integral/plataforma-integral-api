@@ -55,7 +55,7 @@ public partial class PlataformaIntegralContext : DbContext
 
     public virtual DbSet<EstudianteProgreso> EstudianteProgresos { get; set; }
 
-    public virtual DbSet<Examan> Examen { get; set; }
+    public virtual DbSet<Examen> Examen { get; set; }
 
     public virtual DbSet<Medalla> Medallas { get; set; }
 
@@ -87,7 +87,7 @@ public partial class PlataformaIntegralContext : DbContext
 
     public virtual DbSet<SuscripcionTipo> SuscripcionesTipo { get; set; }
 
-    public virtual DbSet<TipoMonedum> TipoMoneda { get; set; }
+    public virtual DbSet<TipoMoneda> TipoMoneda { get; set; }
 
     public virtual DbSet<TipoRol> TipoRoles { get; set; }
 
@@ -111,18 +111,18 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdUsuario).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithOne(p => p.Administrador).HasConstraintName("FK_administrador_usuario");
+            entity.HasOne(d => d.Usuario).WithOne(p => p.Administrador).HasConstraintName("FK_administrador_usuario");
         });
 
         modelBuilder.Entity<AdministradorTorneo>(entity =>
         {
             entity.HasKey(e => new { e.IdAdministrador, e.IdTorneo }).HasName("PK__administ__925340057C3F9EBE");
 
-            entity.HasOne(d => d.IdAdministradorNavigation).WithMany(p => p.AdministradorTorneos).HasConstraintName("FK_at_administrador");
+            entity.HasOne(d => d.Administrador).WithMany(p => p.AdministradorTorneos).HasConstraintName("FK_at_administrador");
 
-            entity.HasOne(d => d.IdTipoRolNavigation).WithMany(p => p.AdministradorTorneos).HasConstraintName("FK_at_tipo_rol");
+            entity.HasOne(d => d.TipoRol).WithMany(p => p.AdministradorTorneos).HasConstraintName("FK_at_tipo_rol");
 
-            entity.HasOne(d => d.IdTorneoNavigation).WithMany(p => p.AdministradorTorneos)
+            entity.HasOne(d => d.Torneo).WithMany(p => p.AdministradorTorneos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_at_torneo");
         });
@@ -131,14 +131,14 @@ public partial class PlataformaIntegralContext : DbContext
         {
             entity.HasKey(e => e.IdCapitulo).HasName("PK__capitulo__5ABB2D5998346CE5");
 
-            entity.HasOne(d => d.IdCursoPregrabadoNavigation).WithMany(p => p.Capitulos).HasConstraintName("FK_capitulo_curso_pregrabado");
+            entity.HasOne(d => d.CursoPregrabado).WithMany(p => p.Capitulos).HasConstraintName("FK_capitulo_curso_pregrabado");
         });
 
         modelBuilder.Entity<Categoria>(entity =>
         {
             entity.HasKey(e => e.IdCategoria).HasName("PK__categori__CD54BC5ABF7A6675");
 
-            entity.HasOne(d => d.IdSuperCategoriaNavigation).WithMany(p => p.InverseIdSuperCategoriaNavigation).HasConstraintName("FK_categoria_super_categoria");
+            entity.HasOne(d => d.SuperCategoria).WithMany(p => p.SubCategorias).HasConstraintName("FK_categoria_super_categoria");
         });
 
         modelBuilder.Entity<Certificado>(entity =>
@@ -147,22 +147,22 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdRecurso).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdCursoNavigation).WithMany(p => p.Certificados)
+            entity.HasOne(d => d.Curso).WithMany(p => p.Certificados)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_certificado_curso");
 
-            entity.HasOne(d => d.IdRecursoNavigation).WithOne(p => p.Certificado).HasConstraintName("FK_certificado_recurso");
+            entity.HasOne(d => d.Recurso).WithOne(p => p.Certificado).HasConstraintName("FK_certificado_recurso");
         });
 
         modelBuilder.Entity<Clase>(entity =>
         {
             entity.HasKey(e => e.IdClase).HasName("PK__clase__2352EEDBD40CA134");
 
-            entity.HasOne(d => d.IdCursoSincronicoNavigation).WithMany(p => p.Clases)
+            entity.HasOne(d => d.CursoSincronico).WithMany(p => p.Clases)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_clase_curso_sincronico");
 
-            entity.HasOne(d => d.IdProfesorNavigation).WithMany(p => p.Clases)
+            entity.HasOne(d => d.Profesor).WithMany(p => p.Clases)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_clase_profesor");
         });
@@ -173,7 +173,7 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdClase).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdClaseNavigation).WithOne(p => p.ClasePresencial).HasConstraintName("FK_clase_presencial_clase");
+            entity.HasOne(d => d.Clase).WithOne(p => p.ClasePresencial).HasConstraintName("FK_clase_presencial_clase");
         });
 
         modelBuilder.Entity<ClaseVirtual>(entity =>
@@ -182,7 +182,7 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdClase).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdClaseNavigation).WithOne(p => p.ClaseVirtual).HasConstraintName("FK_clase_virtual_clase");
+            entity.HasOne(d => d.Clase).WithOne(p => p.ClaseVirtual).HasConstraintName("FK_clase_virtual_clase");
         });
 
         modelBuilder.Entity<ConfiguracionPrivacidad>(entity =>
@@ -196,7 +196,7 @@ public partial class PlataformaIntegralContext : DbContext
             entity.Property(e => e.MostrarNombre).HasDefaultValue(true);
             entity.Property(e => e.MostrarTelefono).HasDefaultValue(false);
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithOne(p => p.ConfiguracionPrivacidad).HasConstraintName("FK_configuracion_usuario");
+            entity.HasOne(d => d.Usuario).WithOne(p => p.ConfiguracionPrivacidad).HasConstraintName("FK_configuracion_usuario");
         });
 
         modelBuilder.Entity<Credencial>(entity =>
@@ -205,7 +205,7 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.FechaCreacion).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.Credenciales).HasConstraintName("FK_credencial_usuario");
+            entity.HasOne(d => d.Usuario).WithMany(p => p.Credenciales).HasConstraintName("FK_credencial_usuario");
         });
 
         modelBuilder.Entity<Cuestionario>(entity =>
@@ -214,11 +214,11 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdRecurso).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdCapituloNavigation).WithMany(p => p.Cuestionarios)
+            entity.HasOne(d => d.Capitulo).WithMany(p => p.Cuestionarios)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_cuestionario_capitulo");
 
-            entity.HasOne(d => d.IdRecursoNavigation).WithOne(p => p.Cuestionario).HasConstraintName("FK_cuestionario_recurso");
+            entity.HasOne(d => d.Recurso).WithOne(p => p.Cuestionario).HasConstraintName("FK_cuestionario_recurso");
         });
 
         modelBuilder.Entity<Curso>(entity =>
@@ -227,9 +227,9 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdProducto).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdProductoNavigation).WithOne(p => p.Curso).HasConstraintName("FK_curso_producto");
+            entity.HasOne(d => d.Producto).WithOne(p => p.Curso).HasConstraintName("FK_curso_producto");
 
-            entity.HasMany(d => d.IdCategoria).WithMany(p => p.IdCursos)
+            entity.HasMany(d => d.Categorias).WithMany(p => p.Cursos)
                 .UsingEntity<Dictionary<string, object>>(
                     "CursoCategorium",
                     r => r.HasOne<Categoria>().WithMany()
@@ -255,7 +255,7 @@ public partial class PlataformaIntegralContext : DbContext
             entity.Property(e => e.IdCurso).ValueGeneratedNever();
             entity.Property(e => e.PrecioPuntos).HasDefaultValue(0);
 
-            entity.HasOne(d => d.IdCursoNavigation).WithOne(p => p.CursoPregrabado).HasConstraintName("FK_cp_curso");
+            entity.HasOne(d => d.Curso).WithOne(p => p.CursoPregrabado).HasConstraintName("FK_cp_curso");
         });
 
         modelBuilder.Entity<CursoSincronico>(entity =>
@@ -264,9 +264,9 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdCurso).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdCursoNavigation).WithOne(p => p.CursoSincronico).HasConstraintName("FK_cs_curso");
+            entity.HasOne(d => d.Curso).WithOne(p => p.CursoSincronico).HasConstraintName("FK_cs_curso");
 
-            entity.HasOne(d => d.IdModalidadNavigation).WithMany(p => p.CursoSincronicos).HasConstraintName("FK_cs_modalidad");
+            entity.HasOne(d => d.Modalidad).WithMany(p => p.CursoSincronicos).HasConstraintName("FK_cs_modalidad");
         });
 
         modelBuilder.Entity<Documento>(entity =>
@@ -275,9 +275,9 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdRecurso).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdRecursoNavigation).WithOne(p => p.Documento).HasConstraintName("FK_documento_recurso");
+            entity.HasOne(d => d.Recurso).WithOne(p => p.Documento).HasConstraintName("FK_documento_recurso");
 
-            entity.HasOne(d => d.IdVideoNavigation).WithMany(p => p.Documentos).HasConstraintName("FK_documento_video");
+            entity.HasOne(d => d.Video).WithMany(p => p.Documentos).HasConstraintName("FK_documento_video");
         });
 
         modelBuilder.Entity<EstadoPago>(entity =>
@@ -297,9 +297,9 @@ public partial class PlataformaIntegralContext : DbContext
             entity.Property(e => e.IdUsuario).ValueGeneratedNever();
             entity.Property(e => e.Puntos).HasDefaultValue(0);
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithOne(p => p.Estudiante).HasConstraintName("FK_estudiante_usuario");
+            entity.HasOne(d => d.Usuario).WithOne(p => p.Estudiante).HasConstraintName("FK_estudiante_usuario");
 
-            entity.HasMany(d => d.IdCategoria).WithMany(p => p.IdEstudiantes)
+            entity.HasMany(d => d.Categorias).WithMany(p => p.Estudiantes)
                 .UsingEntity<Dictionary<string, object>>(
                     "EstudianteIntere",
                     r => r.HasOne<Categoria>().WithMany()
@@ -317,7 +317,7 @@ public partial class PlataformaIntegralContext : DbContext
                         j.IndexerProperty<int>("IdCategoria").HasColumnName("id_categoria");
                     });
 
-            entity.HasMany(d => d.IdCertificados).WithMany(p => p.IdEstudiantes)
+            entity.HasMany(d => d.Certificados).WithMany(p => p.Estudiantes)
                 .UsingEntity<Dictionary<string, object>>(
                     "EstudianteCertificado",
                     r => r.HasOne<Certificado>().WithMany()
@@ -335,7 +335,7 @@ public partial class PlataformaIntegralContext : DbContext
                         j.IndexerProperty<int>("IdCertificado").HasColumnName("id_certificado");
                     });
 
-            entity.HasMany(d => d.IdTorneos).WithMany(p => p.IdEstudiantes)
+            entity.HasMany(d => d.Torneos).WithMany(p => p.Estudiantes)
                 .UsingEntity<Dictionary<string, object>>(
                     "EstudianteInscripcion",
                     r => r.HasOne<Torneo>().WithMany()
@@ -360,42 +360,42 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.FechaOtorgada).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.IdMedallaNavigation).WithMany(p => p.EstudianteMedallas)
+            entity.HasOne(d => d.Medalla).WithMany(p => p.EstudianteMedallas)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_em_medalla");
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.EstudianteMedallas).HasConstraintName("FK_em_estudiante");
+            entity.HasOne(d => d.Usuario).WithMany(p => p.EstudianteMedallas).HasConstraintName("FK_em_estudiante");
         });
 
         modelBuilder.Entity<EstudianteProgreso>(entity =>
         {
             entity.HasKey(e => new { e.IdEstudiante, e.IdRecurso }).HasName("PK__estudian__B201F0E26D3D4D79");
 
-            entity.HasOne(d => d.IdEstudianteNavigation).WithMany(p => p.EstudianteProgresos).HasConstraintName("FK_ep_estudiante");
+            entity.HasOne(d => d.Estudiante).WithMany(p => p.EstudianteProgresos).HasConstraintName("FK_ep_estudiante");
 
-            entity.HasOne(d => d.IdRecursoNavigation).WithMany(p => p.EstudianteProgresos)
+            entity.HasOne(d => d.Recurso).WithMany(p => p.EstudianteProgresos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_ep_recurso");
         });
 
-        modelBuilder.Entity<Examan>(entity =>
+        modelBuilder.Entity<Examen>(entity =>
         {
             entity.HasKey(e => e.IdRecurso).HasName("PK__examen__2B386DE49AEE525E");
 
             entity.Property(e => e.IdRecurso).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdCursoPregrabadoNavigation).WithMany(p => p.Examen).HasConstraintName("FK_examen_curso_pregrabado");
+            entity.HasOne(d => d.CursoPregrabado).WithMany(p => p.Examen).HasConstraintName("FK_examen_curso_pregrabado");
 
-            entity.HasOne(d => d.IdRecursoNavigation).WithOne(p => p.Examan).HasConstraintName("FK_examen_recurso");
+            entity.HasOne(d => d.Recurso).WithOne(p => p.Examen).HasConstraintName("FK_examen_recurso");
         });
 
         modelBuilder.Entity<Medalla>(entity =>
         {
             entity.HasKey(e => e.IdMedalla).HasName("PK__medalla__3D8D7E53DC272BF7");
 
-            entity.HasOne(d => d.IdNivelMedallaNavigation).WithMany(p => p.Medallas).HasConstraintName("FK_medalla_nivel");
+            entity.HasOne(d => d.NivelMedalla).WithMany(p => p.Medallas).HasConstraintName("FK_medalla_nivel");
 
-            entity.HasOne(d => d.IdTorneoNavigation).WithMany(p => p.Medallas).HasConstraintName("FK_medalla_torneo");
+            entity.HasOne(d => d.Torneo).WithMany(p => p.Medallas).HasConstraintName("FK_medalla_torneo");
         });
 
         modelBuilder.Entity<MetodoPago>(entity =>
@@ -419,25 +419,25 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.FechaPago).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.IdEstadoPagoNavigation).WithMany(p => p.Pagos)
+            entity.HasOne(d => d.EstadoPago).WithMany(p => p.Pagos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_pago_estado");
 
-            entity.HasOne(d => d.IdMetodoPagoNavigation).WithMany(p => p.Pagos)
+            entity.HasOne(d => d.MetodoPago).WithMany(p => p.Pagos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_pago_metodo");
 
-            entity.HasOne(d => d.IdProductoNavigation).WithMany(p => p.Pagos)
+            entity.HasOne(d => d.Producto).WithMany(p => p.Pagos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_pago_producto");
 
-            entity.HasOne(d => d.IdReciboNavigation).WithMany(p => p.Pagos).HasConstraintName("FK_pago_recibo");
+            entity.HasOne(d => d.Recibo).WithMany(p => p.Pagos).HasConstraintName("FK_pago_recibo");
 
-            entity.HasOne(d => d.IdTipoMonedaNavigation).WithMany(p => p.Pagos)
+            entity.HasOne(d => d.TipoMoneda).WithMany(p => p.Pagos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_pago_moneda");
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.Pagos)
+            entity.HasOne(d => d.Usuario).WithMany(p => p.Pagos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_pago_usuario");
         });
@@ -464,9 +464,9 @@ public partial class PlataformaIntegralContext : DbContext
             entity.Property(e => e.Calificacion).HasDefaultValue(0m);
             entity.Property(e => e.EstadoVerificacion).HasDefaultValue(false);
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithOne(p => p.Profesor).HasConstraintName("FK_profesor_usuario");
+            entity.HasOne(d => d.Usuario).WithOne(p => p.Profesor).HasConstraintName("FK_profesor_usuario");
 
-            entity.HasMany(d => d.IdCategoria).WithMany(p => p.IdProfesors)
+            entity.HasMany(d => d.Categorias).WithMany(p => p.Profesores)
                 .UsingEntity<Dictionary<string, object>>(
                     "ProfesorEspecialidad",
                     r => r.HasOne<Categoria>().WithMany()
@@ -489,11 +489,11 @@ public partial class PlataformaIntegralContext : DbContext
         {
             entity.HasKey(e => new { e.IdProfesor, e.IdCurso }).HasName("PK__profesor__204D2147AD7CBF77");
 
-            entity.HasOne(d => d.IdCursoNavigation).WithMany(p => p.ProfesorCursos).HasConstraintName("FK_pc_curso");
+            entity.HasOne(d => d.Curso).WithMany(p => p.ProfesorCursos).HasConstraintName("FK_pc_curso");
 
-            entity.HasOne(d => d.IdProfesorNavigation).WithMany(p => p.ProfesorCursos).HasConstraintName("FK_pc_profesor");
+            entity.HasOne(d => d.Profesor).WithMany(p => p.ProfesorCursos).HasConstraintName("FK_pc_profesor");
 
-            entity.HasOne(d => d.IdTipoRolNavigation).WithMany(p => p.ProfesorCursos).HasConstraintName("FK_pc_tipo_rol");
+            entity.HasOne(d => d.TipoRol).WithMany(p => p.ProfesorCursos).HasConstraintName("FK_pc_tipo_rol");
         });
 
         modelBuilder.Entity<Recibo>(entity =>
@@ -502,9 +502,9 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.FechaEmision).HasDefaultValueSql("(getdate())");
 
-            entity.HasOne(d => d.IdEstadoPagoNavigation).WithMany(p => p.Recibos).HasConstraintName("FK_recibo_estado");
+            entity.HasOne(d => d.EstadoPago).WithMany(p => p.Recibos).HasConstraintName("FK_recibo_estado");
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.Recibos)
+            entity.HasOne(d => d.Usuario).WithMany(p => p.Recibos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_recibo_usuario");
         });
@@ -518,20 +518,20 @@ public partial class PlataformaIntegralContext : DbContext
         {
             entity.HasKey(e => new { e.IdEstudiante, e.IdCurso }).HasName("PK__reseña_c__D561816C889DF7A4");
 
-            entity.HasOne(d => d.IdCursoNavigation).WithMany(p => p.ReseñaCursos)
+            entity.HasOne(d => d.Curso).WithMany(p => p.ReseñaCursos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_rc_curso");
 
-            entity.HasOne(d => d.IdEstudianteNavigation).WithMany(p => p.ReseñaCursos).HasConstraintName("FK_rc_estudiante");
+            entity.HasOne(d => d.Estudiante).WithMany(p => p.ReseñaCursos).HasConstraintName("FK_rc_estudiante");
         });
 
         modelBuilder.Entity<ReseñaProfesor>(entity =>
         {
             entity.HasKey(e => new { e.IdEstudiante, e.IdProfesor }).HasName("PK__reseña_p__81EB9B5D05437026");
 
-            entity.HasOne(d => d.IdEstudianteNavigation).WithMany(p => p.ReseñaProfesores).HasConstraintName("FK_rp_estudiante");
+            entity.HasOne(d => d.Estudiante).WithMany(p => p.ReseñaProfesores).HasConstraintName("FK_rp_estudiante");
 
-            entity.HasOne(d => d.IdProfesorNavigation).WithMany(p => p.ReseñaProfesores)
+            entity.HasOne(d => d.Profesor).WithMany(p => p.ReseñasProfesor)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_rp_profesor");
         });
@@ -540,11 +540,11 @@ public partial class PlataformaIntegralContext : DbContext
         {
             entity.HasKey(e => e.IdSuscripcion).HasName("PK__suscripc__4E8926BB7D9E2935");
 
-            entity.HasOne(d => d.IdEstadoSuscripcionNavigation).WithMany(p => p.Suscripciones).HasConstraintName("FK_suscripcion_estado");
+            entity.HasOne(d => d.EstadoSuscripcion).WithMany(p => p.Suscripciones).HasConstraintName("FK_suscripcion_estado");
 
-            entity.HasOne(d => d.IdSuscripcionTipoNavigation).WithMany(p => p.Suscripciones).HasConstraintName("FK_suscripcion_tipo");
+            entity.HasOne(d => d.SuscripcionTipo).WithMany(p => p.Suscripciones).HasConstraintName("FK_suscripcion_tipo");
 
-            entity.HasOne(d => d.IdUsuarioNavigation).WithMany(p => p.Suscripciones).HasConstraintName("FK_suscripcion_usuario");
+            entity.HasOne(d => d.Usuario).WithMany(p => p.Suscripciones).HasConstraintName("FK_suscripcion_usuario");
         });
 
         modelBuilder.Entity<SuscripcionTipo>(entity =>
@@ -553,9 +553,9 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdProducto).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdProductoNavigation).WithOne(p => p.SuscripcionTipo).HasConstraintName("FK_st_producto");
+            entity.HasOne(d => d.Producto).WithOne(p => p.SuscripcionTipo).HasConstraintName("FK_st_producto");
 
-            entity.HasMany(d => d.IdCursos).WithMany(p => p.IdSuscripcionTipos)
+            entity.HasMany(d => d.Cursos).WithMany(p => p.SuscripcionesTipo)
                 .UsingEntity<Dictionary<string, object>>(
                     "SuscripcionCurso",
                     r => r.HasOne<Curso>().WithMany()
@@ -574,7 +574,7 @@ public partial class PlataformaIntegralContext : DbContext
                     });
         });
 
-        modelBuilder.Entity<TipoMonedum>(entity =>
+        modelBuilder.Entity<TipoMoneda>(entity =>
         {
             entity.HasKey(e => e.IdTipoMoneda).HasName("PK__tipo_mon__23E2AB815D07CB2C");
 
@@ -595,7 +595,7 @@ public partial class PlataformaIntegralContext : DbContext
         {
             entity.HasKey(e => e.IdTorneo).HasName("PK__torneo__DBB62AF8CB2F357E");
 
-            entity.HasMany(d => d.IdCategoria).WithMany(p => p.IdTorneos)
+            entity.HasMany(d => d.Categorias).WithMany(p => p.Torneos)
                 .UsingEntity<Dictionary<string, object>>(
                     "TorneoCategorium",
                     r => r.HasOne<Categoria>().WithMany()
@@ -622,9 +622,9 @@ public partial class PlataformaIntegralContext : DbContext
             entity.Property(e => e.FechaRegistro).HasDefaultValueSql("(getdate())");
             entity.Property(e => e.Genero).IsFixedLength();
 
-            entity.HasOne(d => d.IdPaisNavigation).WithMany(p => p.Usuarios).HasConstraintName("FK_usuario_pais");
+            entity.HasOne(d => d.Pais).WithMany(p => p.Usuarios).HasConstraintName("FK_usuario_pais");
 
-            entity.HasOne(d => d.IdTipoUsuarioNavigation).WithMany(p => p.Usuarios).HasConstraintName("FK_usuario_tipo_usuario");
+            entity.HasOne(d => d.TipoUsuario).WithMany(p => p.Usuarios).HasConstraintName("FK_usuario_tipo_usuario");
         });
 
         modelBuilder.Entity<Video>(entity =>
@@ -633,11 +633,11 @@ public partial class PlataformaIntegralContext : DbContext
 
             entity.Property(e => e.IdRecurso).ValueGeneratedNever();
 
-            entity.HasOne(d => d.IdCapituloNavigation).WithMany(p => p.Videos)
+            entity.HasOne(d => d.Capitulo).WithMany(p => p.Videos)
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_video_capitulo");
 
-            entity.HasOne(d => d.IdRecursoNavigation).WithOne(p => p.Video).HasConstraintName("FK_video_recurso");
+            entity.HasOne(d => d.Recurso).WithOne(p => p.Video).HasConstraintName("FK_video_recurso");
         });
 
         OnModelCreatingPartial(modelBuilder);

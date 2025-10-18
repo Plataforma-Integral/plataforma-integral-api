@@ -23,21 +23,15 @@ public partial class Recurso
     [Unicode(false)]
     public string? Url { get; set; }
 
-    [InverseProperty("IdRecursoNavigation")]
     public virtual Certificado? Certificado { get; set; }
 
-    [InverseProperty("IdRecursoNavigation")]
     public virtual Cuestionario? Cuestionario { get; set; }
 
-    [InverseProperty("IdRecursoNavigation")]
     public virtual Documento? Documento { get; set; }
 
-    [InverseProperty("IdRecursoNavigation")]
     public virtual ICollection<EstudianteProgreso> EstudianteProgresos { get; set; } = new List<EstudianteProgreso>();
 
-    [InverseProperty("IdRecursoNavigation")]
-    public virtual Examan? Examan { get; set; }
+    public virtual Examen? Examen { get; set; }
 
-    [InverseProperty("IdRecursoNavigation")]
     public virtual Video? Video { get; set; }
 }

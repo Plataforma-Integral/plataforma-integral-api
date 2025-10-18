@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore;
 namespace PlataformaIntegral.API.Models;
 
 [Table("examen")]
-public partial class Examan
+public partial class Examen
 {
     [Key]
     [Column("id_recurso")]
@@ -20,10 +20,8 @@ public partial class Examan
     public int? PuntuacionMinima { get; set; }
 
     [ForeignKey("IdCursoPregrabado")]
-    [InverseProperty("Examen")]
-    public virtual CursoPregrabado? IdCursoPregrabadoNavigation { get; set; }
+    public virtual CursoPregrabado? CursoPregrabado { get; set; }
 
     [ForeignKey("IdRecurso")]
-    [InverseProperty("Examan")]
-    public virtual Recurso IdRecursoNavigation { get; set; } = null!;
+    public virtual Recurso Recurso { get; set; } = null!;
 }

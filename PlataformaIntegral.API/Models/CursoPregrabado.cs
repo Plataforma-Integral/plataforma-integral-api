@@ -29,13 +29,10 @@ public partial class CursoPregrabado
     [Unicode(false)]
     public string? UrlVideo { get; set; }
 
-    [InverseProperty("IdCursoPregrabadoNavigation")]
     public virtual ICollection<Capitulo> Capitulos { get; set; } = new List<Capitulo>();
 
-    [InverseProperty("IdCursoPregrabadoNavigation")]
-    public virtual ICollection<Examan> Examen { get; set; } = new List<Examan>();
+    public virtual ICollection<Examen> Examen { get; set; } = new List<Examen>();
 
     [ForeignKey("IdCurso")]
-    [InverseProperty("CursoPregrabado")]
-    public virtual Curso IdCursoNavigation { get; set; } = null!;
+    public virtual Curso Curso { get; set; } = null!;
 }
