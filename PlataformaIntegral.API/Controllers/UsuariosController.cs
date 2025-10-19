@@ -51,7 +51,7 @@ namespace PlataformaIntegral.API.Controllers
         [HttpPost]
         public async Task<ActionResult<Usuario>> PostUsuario(UsuarioCreateDto dto)
         {
-            using var transaction = _context.Database.BeginTransaction(); // 1️⃣ Inicia transacción
+            await using var transaction = await _context.Database.BeginTransactionAsync(); // 1️⃣ Inicia transacción
 
             try
             {
@@ -60,7 +60,7 @@ namespace PlataformaIntegral.API.Controllers
                 usuario.FechaRegistro = DateTime.Now;
 
                 _context.Usuarios.Add(usuario);
-                _context.SaveChanges();
+                await _context.SaveChangesAsync();
 
                 // 3️⃣ Crea Credencial y la asocia al usuario
                 var credencial = _mapper.Map<Credencial>(dto.Credencial);
@@ -91,15 +91,17 @@ namespace PlataformaIntegral.API.Controllers
                 }
 
                 // 6️⃣ Guarda todo
-                _context.SaveChanges();
-                transaction.Commit(); // 7️⃣ Confirma la transacción
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync(); // 7️⃣ Confirma la transacción
 
-                return CreatedAtAction(nameof(GetUsuario), new { id = usuario.IdUsuario }, usuario);
+                // 👇 Aquí el cambio: devolvemos el DTO, no la entidad
+                var usuarioRead = _mapper.Map<UsuarioReadDto>(usuario);
+                return CreatedAtAction(nameof(GetUsuario), new { id = usuario.IdUsuario }, usuarioRead);
             }
             catch (Exception ex)
             {
-                transaction.Rollback(); // ❌ Si falla algo, deshace todo
-                return BadRequest(new { message = "Error al crear el usuario", error = ex.Message });
+                await transaction.RollbackAsync(); // ❌ Si falla algo, deshace todo
+                return BadRequest(new { message = "Error al crear el usuario", error = ex.Message, inner = ex.InnerException?.Message });
             }
         }
 

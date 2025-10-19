@@ -1,11 +1,8 @@
-﻿using PlataformaIntegral.API.Models;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace PlataformaIntegral.API.DTOs
+﻿namespace PlataformaIntegral.API.DTOs
 {
-    public class ConfigPrivacidadCreateDto
+    public class ConfigPrivacidadReadDto
     {
+        public int IdUsuario { get; set; }
         public bool? MostrarEmail { get; set; }
 
         public bool? MostrarTelefono { get; set; }

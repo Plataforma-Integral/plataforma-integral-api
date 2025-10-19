@@ -9,7 +9,7 @@ namespace PlataformaIntegral.API.Models;
 [Table("configuracion_privacidad")]
 public partial class ConfiguracionPrivacidad
 {
-    [Key]
+    [Key, ForeignKey("Usuario")]
     [Column("id_usuario")]
     public int IdUsuario { get; set; }
 

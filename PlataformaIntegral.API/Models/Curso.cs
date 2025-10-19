@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.EntityFrameworkCore;
+using PlataformaIntegral.API.Enums;
 
 namespace PlataformaIntegral.API.Models;
 
@@ -12,6 +13,10 @@ public partial class Curso
     [Key]
     [Column("id_producto")]
     public int IdProducto { get; set; }
+    [Column("Estado")]
+    public EstadoCursoEnum Estado { get; set; }
+    [Column("es_privado")]
+    public bool EsPrivado { get; set; } = true;
 
     public virtual ICollection<Certificado> Certificados { get; set; } = new List<Certificado>();
 
