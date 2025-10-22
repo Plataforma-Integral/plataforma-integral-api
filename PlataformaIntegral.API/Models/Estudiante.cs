@@ -31,9 +31,9 @@ public partial class Estudiante
     [ForeignKey("IdUsuario")]
     public virtual Usuario Usuario { get; set; } = null!;
 
-    public virtual ICollection<ReseñaCurso> ReseñaCursos { get; set; } = new List<ReseñaCurso>();
+    public virtual ICollection<ResenaCurso> ReseñaCursos { get; set; } = new List<ResenaCurso>();
 
-    public virtual ICollection<ReseñaProfesor> ReseñaProfesores { get; set; } = new List<ReseñaProfesor>();
+    public virtual ICollection<ResenaProfesor> ReseñaProfesores { get; set; } = new List<ResenaProfesor>();
 
     [ForeignKey("Estudiante")]
     public virtual ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();

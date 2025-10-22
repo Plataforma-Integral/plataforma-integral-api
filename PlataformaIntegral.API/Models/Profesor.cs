@@ -31,7 +31,7 @@ public partial class Profesor
 
     public virtual ICollection<ProfesorCurso> ProfesorCursos { get; set; } = new List<ProfesorCurso>();
 
-    public virtual ICollection<ReseñaProfesor> ReseñasProfesor { get; set; } = new List<ReseñaProfesor>();
+    public virtual ICollection<ResenaProfesor> ReseñasProfesor { get; set; } = new List<ResenaProfesor>();
 
     [ForeignKey("IdProfesor")]
     public virtual ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();

@@ -6,17 +6,17 @@ using Microsoft.EntityFrameworkCore;
 
 namespace PlataformaIntegral.API.Models;
 
-[PrimaryKey("IdEstudiante", "IdCurso")]
-[Table("reseña_curso")]
-public partial class ReseñaCurso
+[PrimaryKey("IdEstudiante", "IdProfesor")]
+[Table("resena_profesor")]
+public partial class ResenaProfesor
 {
     [Key]
     [Column("id_estudiante")]
     public int IdEstudiante { get; set; }
 
     [Key]
-    [Column("id_curso")]
-    public int IdCurso { get; set; }
+    [Column("id_profesor")]
+    public int IdProfesor { get; set; }
 
     [Column("opinion")]
     public bool Opinion { get; set; }
@@ -26,9 +26,9 @@ public partial class ReseñaCurso
     [Unicode(false)]
     public string? Comentario { get; set; }
 
-    [ForeignKey("IdCurso")]
-    public virtual Curso Curso { get; set; } = null!;
-
     [ForeignKey("IdEstudiante")]
     public virtual Estudiante Estudiante { get; set; } = null!;
+
+    [ForeignKey("IdProfesor")]
+    public virtual Profesor Profesor { get; set; } = null!;
 }

@@ -79,9 +79,9 @@ public partial class PlataformaIntegralContext : DbContext
 
     public virtual DbSet<Recurso> Recursos { get; set; }
 
-    public virtual DbSet<ReseñaCurso> ReseñaCursos { get; set; }
+    public virtual DbSet<ResenaCurso> ReseñaCursos { get; set; }
 
-    public virtual DbSet<ReseñaProfesor> ReseñaProfesores { get; set; }
+    public virtual DbSet<ResenaProfesor> ReseñaProfesores { get; set; }
 
     public virtual DbSet<Suscripcion> Suscripciones { get; set; }
 
@@ -514,7 +514,7 @@ public partial class PlataformaIntegralContext : DbContext
             entity.HasKey(e => e.IdRecurso).HasName("PK__recurso__2B386DE4ACF6B739");
         });
 
-        modelBuilder.Entity<ReseñaCurso>(entity =>
+        modelBuilder.Entity<ResenaCurso>(entity =>
         {
             entity.HasKey(e => new { e.IdEstudiante, e.IdCurso }).HasName("PK__reseña_c__D561816C889DF7A4");
 
@@ -525,7 +525,7 @@ public partial class PlataformaIntegralContext : DbContext
             entity.HasOne(d => d.Estudiante).WithMany(p => p.ReseñaCursos).HasConstraintName("FK_rc_estudiante");
         });
 
-        modelBuilder.Entity<ReseñaProfesor>(entity =>
+        modelBuilder.Entity<ResenaProfesor>(entity =>
         {
             entity.HasKey(e => new { e.IdEstudiante, e.IdProfesor }).HasName("PK__reseña_p__81EB9B5D05437026");
 

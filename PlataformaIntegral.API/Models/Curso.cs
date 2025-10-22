@@ -29,7 +29,7 @@ public partial class Curso
 
     public virtual ICollection<ProfesorCurso> ProfesorCursos { get; set; } = new List<ProfesorCurso>();
 
-    public virtual ICollection<ReseñaCurso> ReseñaCursos { get; set; } = new List<ReseñaCurso>();
+    public virtual ICollection<ResenaCurso> ReseñaCursos { get; set; } = new List<ResenaCurso>();
 
     [ForeignKey("IdCurso")]
     public virtual ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();
