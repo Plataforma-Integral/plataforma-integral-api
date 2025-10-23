@@ -45,13 +45,6 @@ namespace PlataformaIntegral.API.DTOs
         public DateTime? FechaRegistro { get; set; }
 
         public ConfigPrivacidadReadDto? ConfiguracionPrivacidad { get; set; }
-        //Clases que se llenaran dependiendo del tipo de usuario
-
-        /*
-        public Estudiante? Estudiante { get; set; }
-        public Profesor? Profesor { get; set; }
-        public Administrador? Administrador { get; set; }
-        */
 
         // Nota: No incluir la propiedad Credencial para evitar exponer contraseñas
     }

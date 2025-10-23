@@ -21,6 +21,6 @@ namespace PlataformaIntegral.API.DTOs
         [Unicode(false)]
         public string? UrlVideo { get; set; }
 
-        public virtual string? NombreCurso { get; set; } = null!;
+        public string? NombreCurso { get; set; } = null!;
     }
 }

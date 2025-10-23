@@ -11,6 +11,6 @@ namespace PlataformaIntegral.API.DTOs
         [Unicode(false)]
         public string? Rol { get; set; }
 
-        public virtual UsuarioReadDto Usuario { get; set; } = null!;
+        public string? NombreUsuario { get; set; } = null!;
     }
 }

@@ -26,6 +26,6 @@ namespace PlataformaIntegral.API.DTOs
 
         public ExamenCreateDto? Examen { get; set; }
 
-        //public VideoCreateDto? Video { get; set; }
+        public VideoCreateDto? Video { get; set; }
     }
 }

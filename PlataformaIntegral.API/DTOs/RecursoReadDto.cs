@@ -17,14 +17,14 @@ namespace PlataformaIntegral.API.DTOs
         [Unicode(false)]
         public string? Url { get; set; }
 
-        public virtual CertificadoReadDto? Certificado { get; set; }
+        public CertificadoReadDto? Certificado { get; set; }
 
-        public virtual CuestionarioReadDto? Cuestionario { get; set; }
+        public CuestionarioReadDto? Cuestionario { get; set; }
 
-        public virtual DocumentoReadDto? Documento { get; set; }
+        public DocumentoReadDto? Documento { get; set; }
 
-        public virtual ExamenReadDto? Examen { get; set; }
+        public ExamenReadDto? Examen { get; set; }
 
-        //public virtual VideoReadDto? Video { get; set; }
+        public VideoReadDto? Video { get; set; }
     }
 }

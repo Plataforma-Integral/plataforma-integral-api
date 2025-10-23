@@ -5,14 +5,12 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlataformaIntegral.API.DTOs
 {
-    public class EstudianteCreateDto
+    public class TipoRolReadDto
     {
-        public int IdUsuario { get; set; }
+        public int IdTipoRol { get; set; }
 
-        [StringLength(120)]
+        [StringLength(50)]
         [Unicode(false)]
-        public string? Educacion { get; set; }
-
-        public int? Puntos { get; set; }
+        public string Nombre { get; set; } = null!;
     }
 }

@@ -12,8 +12,8 @@ namespace PlataformaIntegral.API.DTOs
 
         public int? PuntuacionMinima { get; set; }
 
-        public virtual string? NombreCursoPregrabado { get; set; }
+        public string? NombreCursoPregrabado { get; set; }
 
-        public virtual string? NombreRecurso { get; set; } = null!;
+        public string? NombreRecurso { get; set; } = null!;
     }
 }

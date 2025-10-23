@@ -13,12 +13,10 @@ namespace PlataformaIntegral.API.DTOs
 
         public CertificadoReadDto Certificado { get; set; } = null!;
 
-        //public CursoPregrabado? CursoPregrabado { get; set; }
+        public CursoPregrabadoReadDto? CursoPregrabado { get; set; } = null;
 
-        //public CursoSincronico? CursoSincronico { get; set; }
+        public CursoSincronicoReadDto? CursoSincronico { get; set; } = null;
 
-        public Producto Producto { get; set; } = null!;
-
-        public ICollection<Categoria> Categorias { get; set; } = new List<Categoria>();
+        public string? NombreProducto { get; set; } = null!;
     }
 }

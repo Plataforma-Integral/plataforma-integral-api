@@ -16,8 +16,8 @@ namespace PlataformaIntegral.API.DTOs
         [Required]
         public TipoCursoEnum TipoCurso { get; set; }
 
-        public CursoPregrabado? CursoPregrabado { get; set; }
+        public CursoPregrabadoCreateDto? CursoPregrabado { get; set; }
 
-        public CursoSincronico? CursoSincronico { get; set; }
+        public CursoSincronicoCreateDto? CursoSincronico { get; set; }
     }
 }

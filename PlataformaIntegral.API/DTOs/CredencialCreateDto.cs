@@ -17,7 +17,5 @@ namespace PlataformaIntegral.API.DTOs
 
         [StringLength(50)]
         public string? Proveedor { get; set; }
-
-        public DateTime? FechaCreacion { get; set; }
     }
 }

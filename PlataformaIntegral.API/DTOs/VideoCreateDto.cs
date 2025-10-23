@@ -5,22 +5,20 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace PlataformaIntegral.API.DTOs
 {
-    public class CapituloReadDto
+    public class VideoCreateDto
     {
+        public int IdRecurso { get; set; }
+
         public int IdCapitulo { get; set; }
 
-        public int IdCursoPregrabado { get; set; }
-
-        [StringLength(120)]
-        [Unicode(false)]
-        public string? Nombre { get; set; }
-
-        [StringLength(400)]
+        [StringLength(300)]
         [Unicode(false)]
         public string? Descripcion { get; set; }
 
         public int? NumeroOrden { get; set; }
 
-        public string? NombreCursoPregrabado { get; set; } = null!;
+        [StringLength(50)]
+        [Unicode(false)]
+        public string? Tipo { get; set; } = null; //Aun no le vi utilidad a la propiedad
     }
 }

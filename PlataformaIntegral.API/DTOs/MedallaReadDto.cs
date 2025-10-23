@@ -23,8 +23,8 @@ namespace PlataformaIntegral.API.DTOs
         [Unicode(false)]
         public string? UrlImagen { get; set; }
 
-        public virtual string? NombreNivelMedalla { get; set; }
+        public string? NombreNivelMedalla { get; set; }
 
-        public virtual string? NombreTorneo { get; set; }
+        public string? NombreTorneo { get; set; }
     }
 }

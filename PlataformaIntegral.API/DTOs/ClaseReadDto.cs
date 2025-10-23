@@ -25,11 +25,11 @@ namespace PlataformaIntegral.API.DTOs
 
         public TimeOnly? Hora { get; set; }
 
-        //public ClasePresencial? ClasePresencial { get; set; }
+        public string? DireccionClasePresencial { get; set; }
 
-        //public ClaseVirtual? ClaseVirtual { get; set; }
+        public string? UrlClaseVirtual { get; set; }
 
-        //public CursoSincronico CursoSincronico { get; set; } = null!;
+        public string? NombreCursoSincronico { get; set; } = null!;
 
         public string NombreProfesor { get; set; } = null!;
     }

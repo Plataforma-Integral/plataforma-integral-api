@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using PlataformaIntegral.API.Enums;
 using PlataformaIntegral.API.Models;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -25,13 +26,11 @@ namespace PlataformaIntegral.API.DTOs
         public DateOnly? Fecha { get; set; }
 
         public TimeOnly? Hora { get; set; }
+        
+        public TipoClaseEnum TipoClase { get; set; }
 
-        //public ClasePresencial? ClasePresencial { get; set; }
+        public string? DireccionClasePresencial { get; set; } 
 
-        //public ClaseVirtual? ClaseVirtual { get; set; }
-
-        //public CursoSincronico CursoSincronico { get; set; } = null!;
-
-        public string NombreProfesor { get; set; } = null!;
+        public string? UrlClaseVirtual { get; set; }
     }
 }
