@@ -14,5 +14,6 @@ namespace PlataformaIntegral.API.DTOs
         public string? Educacion { get; set; }
 
         public int? Puntos { get; set; }
+        public List<int>? CategoriaIds { get; set; }
     }
 }

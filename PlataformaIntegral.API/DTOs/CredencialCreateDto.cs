@@ -8,6 +8,7 @@ namespace PlataformaIntegral.API.DTOs
 {
     public class CredencialCreateDto
     {
+        public int IdUsuario { get; set; }
 
         [Required, StringLength(120), EmailAddress]
         public string Email { get; set; } = null!;

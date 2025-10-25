@@ -18,5 +18,6 @@ namespace PlataformaIntegral.API.DTOs
         public string? Disponibilidad { get; set; }
 
         public string? NombreUsuario { get; set; } = null!;
+        public List<CategoriaReadDto>? Categorias { get; set; }
     }
 }

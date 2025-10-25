@@ -9,7 +9,17 @@ namespace PlataformaIntegral.API.Profiles
         public EstudianteProfile() 
         {
             //CREATE DTOs:
-            CreateMap<EstudianteCreateDto, Estudiante>();
+            CreateMap<EstudianteCreateDto, Estudiante>()
+                .ForMember(dest => dest.ReseñaCursos, opt => opt.Ignore())
+                .ForMember(dest => dest.ReseñaProfesores, opt => opt.Ignore())
+                .ForMember(dest => dest.EstudianteMedallas, opt => opt.Ignore())
+                .ForMember(dest => dest.EstudianteProgresos, opt => opt.Ignore())
+                .ForMember(dest => dest.Categorias, opt => opt.Ignore())
+                .ForMember(dest => dest.Certificados, opt => opt.Ignore())
+                .ForMember(dest => dest.Torneos, opt => opt.Ignore())
+                .ForMember(dest => dest.Usuario, opt => opt.Ignore())
+                .ForMember(dest => dest.UltimoLogin, opt => opt.Ignore())
+                .ForMember(dest => dest.IdUsuario, opt => opt.Ignore());
 
             //READ DTOs:
             CreateMap<Estudiante, EstudianteReadDto>()

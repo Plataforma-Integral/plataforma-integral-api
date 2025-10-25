@@ -8,6 +8,7 @@ namespace PlataformaIntegral.API.DTOs
     public class CursoPregrabadoCreateDto
     {
         public int IdCurso { get; set; }
+        public int? IdCertificado { get; set; }
 
         public int? PrecioPuntos { get; set; }
 

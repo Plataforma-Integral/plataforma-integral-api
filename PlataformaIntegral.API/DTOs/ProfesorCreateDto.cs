@@ -16,5 +16,6 @@ namespace PlataformaIntegral.API.DTOs
         [StringLength(120)]
         [Unicode(false)]
         public string? Disponibilidad { get; set; }
+        public List<int>? CategoriaIds { get; set; }
     }
 }
