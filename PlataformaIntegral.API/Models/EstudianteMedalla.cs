@@ -25,5 +25,5 @@ public partial class EstudianteMedalla
     public virtual Medalla Medalla { get; set; } = null!;
 
     [ForeignKey("IdUsuario")]
-    public virtual Estudiante Usuario { get; set; } = null!;
+    public virtual Estudiante Estudiante { get; set; } = null!;
 }

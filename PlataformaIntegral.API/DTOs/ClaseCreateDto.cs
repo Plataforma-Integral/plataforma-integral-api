@@ -8,13 +8,10 @@ namespace PlataformaIntegral.API.DTOs
 {
     public class ClaseCreateDto
     {
-        [Required]
         public int IdProfesor { get; set; }
 
-        [Required]
         public int IdCursoSincronico { get; set; }
 
-        [Required]
         [StringLength(120)]
         [Unicode(false)]
         public string? Nombre { get; set; }

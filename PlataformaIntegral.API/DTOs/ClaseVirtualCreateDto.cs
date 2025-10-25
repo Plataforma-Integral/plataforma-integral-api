@@ -13,7 +13,5 @@ namespace PlataformaIntegral.API.DTOs
         [StringLength(300)]
         [Unicode(false)]
         public string? Url { get; set; }
-
-        public string? NombreClase { get; set; } = null!;
     }
 }

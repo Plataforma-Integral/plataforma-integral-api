@@ -20,9 +20,17 @@ namespace PlataformaIntegral.API.Profiles
                 .ForMember(dest => dest.Categorias, opt => opt.Ignore())
                 .ForMember(dest => dest.SuscripcionesTipo, opt => opt.Ignore());
 
+            CreateMap<ResenaCursoCreateDto, ResenaCurso>()
+                .ForMember(dest => dest.Curso, opt => opt.Ignore())
+                .ForMember(dest => dest.Estudiante, opt => opt.Ignore());
+
             //READ DTOs:
             CreateMap<Curso, CursoReadDto>()
                 .ForMember(dest => dest.NombreProducto, opt => opt.MapFrom(src => src.Producto.Nombre));
+
+            CreateMap<ResenaCurso, ResenaCursoReadDto>()
+                .ForMember(dest => dest.NombreCurso, opt => opt.MapFrom(src => src.Curso.Producto.Nombre))
+                .ForMember(dest => dest.NombreEstudiante, opt => opt.MapFrom(src => src.Estudiante.Usuario.Nombre));
         }
     }
 }

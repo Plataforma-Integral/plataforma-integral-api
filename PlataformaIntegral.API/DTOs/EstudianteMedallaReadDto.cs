@@ -10,6 +10,6 @@
 
         public string? NombreMedalla { get; set; } = null!;
 
-        public string? NombreUsuario { get; set; } = null!;
+        public string? NombreEstudiante { get; set; } = null!;
     }
 }

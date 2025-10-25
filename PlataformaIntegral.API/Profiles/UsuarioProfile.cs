@@ -19,33 +19,49 @@ namespace PlataformaIntegral.API.Profiles
                 .ForMember(dest => dest.Pagos, opt => opt.Ignore())
                 .ForMember(dest => dest.Profesor, opt => opt.Ignore())
                 .ForMember(dest => dest.Suscripciones, opt => opt.Ignore());
+
                 //Relacionados con Usuario:
             CreateMap<CredencialCreateDto, Credencial>()
                 .ForMember(dest => dest.IdCredencial, opt => opt.Ignore())
                 .ForMember(dest => dest.IdUsuario, opt => opt.Ignore())
                 .ForMember(dest => dest.FechaCreacion, opt => opt.Ignore())
                 .ForMember(dest => dest.Usuario, opt => opt.Ignore());
+
             CreateMap<ConfigPrivacidadCreateDto, ConfiguracionPrivacidad>()
                 .ForMember(dest => dest.IdUsuario, opt => opt.Ignore())
                 .ForMember(dest => dest.Usuario, opt => opt.Ignore());
+
             CreateMap<TipoUsuarioCreateDto, TipoUsuario>()
                 .ForMember(dest => dest.IdTipoUsuario, opt => opt.Ignore())
                 .ForMember(dest => dest.Usuarios, opt => opt.Ignore());
+
             CreateMap<PaisCreateDto, Pais>()
                 .ForMember(dest => dest.IdPais, opt => opt.Ignore())
                 .ForMember(dest => dest.Usuarios, opt => opt.Ignore());
+
+            CreateMap<DTOs.TipoRolCreateDto, TipoRol>()
+                .ForMember(dest => dest.IdTipoRol, opt => opt.Ignore())
+                .ForMember(dest => dest.AdministradorTorneos, opt => opt.Ignore())
+                .ForMember(dest => dest.ProfesorCursos, opt => opt.Ignore());
 
             //READ DTOs:
             CreateMap<Usuario, UsuarioReadDto>()
                 .ForMember(dest => dest.Pais, opt => opt.MapFrom(src => src.Pais != null ? src.Pais.Nombre : null))
                 .ForMember(dest => dest.TipoUsuario, opt => opt.MapFrom(src => src.TipoUsuario != null ? src.TipoUsuario.Nombre : null))
                 .ForMember(dest => dest.ConfiguracionPrivacidad, opt => opt.MapFrom(src => src.ConfiguracionPrivacidad));
+
                 //Relacionados con Usuario:
             CreateMap<Credencial, CredencialReadDto>()
                 .ForMember(dest => dest.NombreUsuario, opt => opt.MapFrom(src => src.Usuario.Nombre));
+
             CreateMap<ConfiguracionPrivacidad, ConfigPrivacidadReadDto>();
+
             CreateMap<TipoUsuario, TipoUsuarioReadDto>();
+
             CreateMap<Pais, PaisReadDto>();
+
+            CreateMap<TipoRol, TipoRolReadDto>();
+
         }
     }
 }
