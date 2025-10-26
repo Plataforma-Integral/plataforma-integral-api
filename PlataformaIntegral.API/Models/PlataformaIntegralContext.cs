@@ -364,7 +364,7 @@ public partial class PlataformaIntegralContext : DbContext
                 .OnDelete(DeleteBehavior.ClientSetNull)
                 .HasConstraintName("FK_em_medalla");
 
-            entity.HasOne(d => d.Usuario).WithMany(p => p.EstudianteMedallas).HasConstraintName("FK_em_estudiante");
+            entity.HasOne(d => d.Estudiante).WithMany(p => p.EstudianteMedallas).HasConstraintName("FK_em_estudiante");
         });
 
         modelBuilder.Entity<EstudianteProgreso>(entity =>

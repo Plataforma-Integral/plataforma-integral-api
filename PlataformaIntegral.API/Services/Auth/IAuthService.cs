@@ -1,4 +1,4 @@
-﻿namespace PlataformaIntegral.API.Services
+﻿namespace PlataformaIntegral.API.Services.Auth
 {
     public interface IAuthService
     {

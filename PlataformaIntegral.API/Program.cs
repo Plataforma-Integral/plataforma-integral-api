@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PlataformaIntegral.API.Models;
+using PlataformaIntegral.API.Services;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -50,6 +51,10 @@ builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
 // Agregar EF Core
 builder.Services.AddDbContext<PlataformaIntegralContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("PlataformaIntegralDB")));
+
+// Inyectar servicios personalizados
+builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+
 
 // Configurar JWT Authentication
 var jwtKey = builder.Configuration["Jwt:Key"] ?? "quALEgRangrefULPAlMINGentIcHINFe"; // Contraseña por defecto

@@ -23,3 +23,4 @@ namespace PlataformaIntegral.API.Profiles
                 .ForMember(dest => dest.NombreSuperCategoria, opt => opt.MapFrom(src => src.SuperCategoria != null ? src.SuperCategoria.Nombre : null));
         }
     }
+}

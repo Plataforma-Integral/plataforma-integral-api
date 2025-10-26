@@ -1,6 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PlataformaIntegral.API.DTOs.Auth;
-using PlataformaIntegral.API.Services;
 using PlataformaIntegral.API.Services.Auth;
 
 namespace PlataformaIntegral.API.Controllers
