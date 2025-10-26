@@ -4,6 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PlataformaIntegral.API.Models;
 using PlataformaIntegral.API.Services;
+using PlataformaIntegral.API.Services.Auth;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -53,6 +54,7 @@ builder.Services.AddDbContext<PlataformaIntegralContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("PlataformaIntegralDB")));
 
 // Inyectar servicios personalizados
+builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
 
 

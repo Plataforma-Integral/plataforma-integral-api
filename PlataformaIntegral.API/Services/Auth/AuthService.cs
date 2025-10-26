@@ -13,7 +13,7 @@ using System.Text;
 
 namespace PlataformaIntegral.API.Services.Auth
 {
-    public class AuthService : IAuthService
+    public class AuthService : Services.Auth.IAuthService
     {
         private readonly PlataformaIntegralContext _context;
         private readonly IConfiguration _config;
