@@ -52,30 +52,38 @@ builder.Services.AddDbContext<PlataformaIntegralContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("PlataformaIntegralDB")));
 
 // Configurar JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "CLAVE_SUPER_SECRETA_MINIMO_32_CARACTERES"; // <-- Cambia luego en appsettings
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "quALEgRangrefULPAlMINGentIcHINFe"; // Contraseña por defecto
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = "Bearer";
     options.DefaultChallengeScheme = "Bearer";
+    // indican que la autenticación será por Bearer JWT.
 })
 .AddJwtBearer("Bearer", options =>
 {
+    // parámetros que la API usa para validar los tokens recibidos
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = false, // Puedes activarlo luego si tienes dominio fijo
         ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
+        ValidIssuer = builder.Configuration["Jwt:Issuer"],
+        ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
 });
 
+// Inyectar servicios personalizados - Pipeline de servicios
 var app = builder.Build();
 
-// Habilitar autenticación
+// Habilitar autenticación antes de la autorización
 app.UseAuthentication();
+
+// Luego habilitar autorización
+app.UseAuthorization();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
