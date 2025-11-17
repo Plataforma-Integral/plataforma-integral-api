@@ -1,4 +1,6 @@
 ﻿using AutoMapper;
+using PlataformaIntegral.API.DTOs;
+using PlataformaIntegral.API.Models;
 
 namespace PlataformaIntegral.API.Profiles
 {
@@ -65,6 +67,22 @@ namespace PlataformaIntegral.API.Profiles
             CreateMap<Models.Examen, DTOs.ExamenReadDto>()
                 .ForMember(dest => dest.NombreRecurso, opt => opt.MapFrom(src => src.Recurso != null ? src.Recurso.Nombre : null))
                 .ForMember(dest => dest.NombreCursoPregrabado, opt => opt.MapFrom(src => src.CursoPregrabado != null ? src.CursoPregrabado.Curso.Producto.Nombre : null));
+
+            CreateMap<Cuestionario, RecursoCuestionarioDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.IdRecurso))
+                .ForMember(dest => dest.Titulo, opt => opt.MapFrom(src => src.Recurso.Nombre))
+                .ForMember(dest => dest.NumeroOrden, opt => opt.MapFrom(src => src.NumeroOrden))
+                .ForMember(dest => dest.Resuelto, opt => opt.Ignore()); // Se asignará en el servicio según el estudiante autenticado.
+
+            CreateMap<Video, RecursoVideoDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.IdRecurso))
+                .ForMember(dest => dest.Titulo, opt => opt.MapFrom(src => src.Recurso.Nombre))
+                .ForMember(dest => dest.Duracion, opt => opt.Ignore())
+                .ForMember(dest => dest.NumeroOrden, opt => opt.MapFrom(src => src.NumeroOrden))
+                .ForMember(dest => dest.Visto, opt => opt.Ignore()) // Se asignará en el servicio según el estudiante autenticado.
+                .ForMember(dest => dest.PresignedUrl, opt => opt.Ignore()); // Se asignará en el servicio si es necesario.
+
+
         }
     }
 }

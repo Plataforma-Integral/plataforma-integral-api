@@ -38,6 +38,10 @@ namespace PlataformaIntegral.API.Profiles
                 .ForMember(dest => dest.NombreProfesor, opt => opt.MapFrom(src => src.Profesor.Usuario.Nombre))
                 .ForMember(dest => dest.NombreCurso, opt => opt.MapFrom(src => src.Curso.Producto.Nombre))
                 .ForMember(dest => dest.NombreTipoRol, opt => opt.MapFrom(src => src.TipoRol != null ? src.TipoRol.Nombre : null));
+
+            CreateMap<Profesor, ProfesorSimpleDto>()
+                .ForMember(dest => dest.NombreCompleto, opt => opt.MapFrom(src => src.Usuario.Nombre))
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.IdUsuario));
         }
     }
 }

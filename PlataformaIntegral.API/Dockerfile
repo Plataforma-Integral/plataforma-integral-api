@@ -12,19 +12,19 @@ EXPOSE 8081
 FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
 ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
-COPY ["PlataformaIntegral/PlataformaIntegral.csproj", "PlataformaIntegral/"]
-RUN dotnet restore "./PlataformaIntegral/PlataformaIntegral.csproj"
+COPY ["PlataformaIntegral.API/PlataformaIntegral.API.csproj", "PlataformaIntegral.API/"]
+RUN dotnet restore "./PlataformaIntegral.API/PlataformaIntegral.API.csproj"
 COPY . .
-WORKDIR "/src/PlataformaIntegral"
-RUN dotnet build "./PlataformaIntegral.csproj" -c $BUILD_CONFIGURATION -o /app/build
+WORKDIR "/src/PlataformaIntegral.API"
+RUN dotnet build "./PlataformaIntegral.API.csproj" -c $BUILD_CONFIGURATION -o /app/build
 
 # Esta fase se usa para publicar el proyecto de servicio que se copiará en la fase final.
 FROM build AS publish
 ARG BUILD_CONFIGURATION=Release
-RUN dotnet publish "./PlataformaIntegral.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
+RUN dotnet publish "./PlataformaIntegral.API.csproj" -c $BUILD_CONFIGURATION -o /app/publish /p:UseAppHost=false
 
 # Esta fase se usa en producción o cuando se ejecuta desde VS en modo normal (valor predeterminado cuando no se usa la configuración de depuración)
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "PlataformaIntegral.dll"]
+ENTRYPOINT ["dotnet", "PlataformaIntegral.API.dll"]

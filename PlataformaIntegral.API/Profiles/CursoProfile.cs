@@ -31,6 +31,30 @@ namespace PlataformaIntegral.API.Profiles
             CreateMap<ResenaCurso, ResenaCursoReadDto>()
                 .ForMember(dest => dest.NombreCurso, opt => opt.MapFrom(src => src.Curso.Producto.Nombre))
                 .ForMember(dest => dest.NombreEstudiante, opt => opt.MapFrom(src => src.Estudiante.Usuario.Nombre));
+
+            CreateMap<Curso, CursoCardDto>()
+                .ForMember(dest => dest.Titulo, opt => opt.MapFrom(src => src.Producto.Nombre))
+                .ForMember(dest => dest.Precio, opt => opt.MapFrom(src => src.Producto.Precio))
+                .ForMember(dest => dest.PortadaUrl, opt => opt.MapFrom(src => src.CursoPregrabado != null ? src.CursoPregrabado.UrlPortada : "curso Sincronico")) //Añadir portada para el curso sincrónico.
+                .ForMember(dest => dest.Categorias, opt => opt.MapFrom(src => src.Categorias.Select(c => c.Nombre).ToList()))
+                .ForMember(dest => dest.Profesores, opt => opt.MapFrom(src => src.ProfesorCursos.Select(pc => pc.Profesor).ToList()))
+                .ForMember(dest => dest.Calificacion, opt => opt.MapFrom(src =>
+                    src.ReseñaCursos.Any()
+                        ? (double?)src.ReseñaCursos.Count(r => r.Opinion == true)
+                            / src.ReseñaCursos.Count() * 100.0
+                        : null
+                ))
+                .ForMember(dest => dest.CantidadEstudiantes, opt => opt.MapFrom(src =>
+                    src.Producto.Pagos != null
+                        ? src.Producto.Pagos
+                            .Where(p => p.EstadoPago.Nombre == "Aprobado")
+                            .Select(p => p.Recibo.IdUsuario)
+                            .Distinct()
+                            .Count()
+                        : 0
+                ))
+                .ForMember(dest => dest.Modalidad, opt => opt.MapFrom(src => src.CursoPregrabado != null ? "Pregrabado" : (src.CursoSincronico != null ? "Sincrónico" : null)))
+                .ForMember(dest => dest.FechaPublicacion, opt => opt.MapFrom(src => src.Producto.FechaCreacion));
         }
     }
 }

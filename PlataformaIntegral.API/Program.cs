@@ -1,25 +1,26 @@
 using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using PlataformaIntegral.API.Models;
 using PlataformaIntegral.API.Services;
 using PlataformaIntegral.API.Services.Auth;
 using System.Text;
+using Minio;
+
+// -------------------- CONFIGURACIÓN INICIAL --------------------
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// -------------------- SERVICIOS BÁSICOS --------------------
 
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
-// Configurar Swagger para soportar autenticación con JWT
+// Swagger con autenticación JWT
 builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo { Title = "PlataformaIntegral API", Version = "v1" });
 
-    // Esquema para incluir el JWT en Swagger UI
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Name = "Authorization",
@@ -46,64 +47,183 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
-// Configurar AutoMapper detectando todos los Profiles del proyecto
+// AutoMapper y DbContext
 builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-
-// Agregar EF Core
 builder.Services.AddDbContext<PlataformaIntegralContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("PlataformaIntegralDB")));
 
-// Inyectar servicios personalizados
+// Servicios personalizados
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ICrearCursoService, CrearCursoService>();
 builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+builder.Services.AddScoped<MinioService>();
+builder.Services.AddScoped<ICursoService, CursoService>();
 
+// -------------------- JWT --------------------
 
-// Configurar JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "quALEgRangrefULPAlMINGentIcHINFe"; // Contraseña por defecto
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "quALEgRangrefULPAlMINGentIcHINFe";
 var key = Encoding.UTF8.GetBytes(jwtKey);
 
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = "Bearer";
     options.DefaultChallengeScheme = "Bearer";
-    // indican que la autenticación será por Bearer JWT.
 })
 .AddJwtBearer("Bearer", options =>
 {
-    // parámetros que la API usa para validar los tokens recibidos
     options.TokenValidationParameters = new TokenValidationParameters
     {
-        ValidateIssuer = false, // Puedes activarlo luego si tienes dominio fijo
+        ValidateIssuer = false,
         ValidateAudience = false,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidIssuer = builder.Configuration["Jwt:Issuer"],
-        ValidAudience = builder.Configuration["Jwt:Audience"],
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
 });
 
-// Inyectar servicios personalizados - Pipeline de servicios
+// -------------------- CORS --------------------
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll", policy =>
+    {
+        policy
+            .AllowAnyOrigin()
+            .AllowAnyMethod()
+            .AllowAnyHeader();
+    });
+});
+
+// -------------------- CONFIGURAR MINIO --------------------
+
+//string minioNetworkEndpoint = "http://minio:9000"; // red Docker
+string minioLocalEndpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000"; // local
+string minioAccessKey = builder.Configuration["Minio:AccessKey"] ?? "AdminPI";
+string minioSecretKey = builder.Configuration["Minio:SecretKey"] ?? "CREDENCIAL_ELIMINADA";
+// Temporales, se deben pasar a appsettings.json
+var minioHost = "localhost";
+var minioPort = 9000;
+var useSSL = false;
+
+IMinioClient? minioClient = null;
+
+var client = new MinioClient()
+            .WithEndpoint(minioHost, minioPort)
+            .WithCredentials(minioAccessKey, minioSecretKey)
+            .WithSSL(useSSL)
+            .Build();
+
+async Task<bool> TestMinioConnectionAsync(IMinioClient client)
+{
+    try
+    {
+        await client.ListBucketsAsync();
+        return true;
+    }
+    catch
+    {
+        return false;
+    }
+}
+
+if (await TestMinioConnectionAsync(client))
+{
+    Console.WriteLine($" Conectado a MinIO local: {minioLocalEndpoint}");
+    minioClient = client;
+}
+else
+{
+    Console.WriteLine($" No se pudo conectar a ningún servidor MinIO.");
+}
+
+
+/* Probar conexión a MinIO en red Docker primero, si falla probar localhost*/
+/*
+try
+{
+    Console.WriteLine($"Intentando conectar a MinIO (red Docker)...");
+
+    var client = new MinioClient()
+        .WithEndpoint(minioNetworkEndpoint)
+        .WithCredentials(minioAccessKey, minioSecretKey)
+        .Build();
+
+    if (await TestMinioConnectionAsync(client))
+    {
+        Console.WriteLine($" Conectado a MinIO en red Docker: {minioNetworkEndpoint}");
+        minioClient = client;
+    }
+    else
+    {
+        Console.WriteLine($" No se pudo conectar a MinIO en red. Probando localhost...");
+
+        client = new MinioClient()
+            .WithEndpoint(minioLocalEndpoint)
+            .WithCredentials(minioAccessKey, minioSecretKey)
+            .Build();
+
+        if (await TestMinioConnectionAsync(client))
+        {
+            Console.WriteLine($" Conectado a MinIO local: {minioLocalEndpoint}");
+            minioClient = client;
+        }
+        else
+        {
+            Console.WriteLine($" No se pudo conectar a ningún servidor MinIO.");
+        }
+    }
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"Error al conectar con MinIO: {ex.Message}");
+}
+*/
+
+if (minioClient != null)
+{
+    // Registrar correctamente como la interfaz
+    builder.Services.AddSingleton<IMinioClient>(minioClient);
+    builder.Services.AddSingleton(minioClient);
+    builder.Services.AddScoped<MinioService>();
+}
+
+// Configurar Kestrel para escuchar en el puerto 5020
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.ListenAnyIP(5020); // puerto libre
+});
+
+// -------------------- CONSTRUIR APP --------------------
+
 var app = builder.Build();
 
-// Habilitar autenticación antes de la autorización
-app.UseAuthentication();
+//Temporal
+app.UseSwagger();
+app.UseSwaggerUI();
 
-// Luego habilitar autorización
-app.UseAuthorization();
-
-// Configure the HTTP request pipeline.
+/*
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
+*/
 
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
-
-// Autorizar después de autenticar
+app.UseAuthentication();
 app.UseAuthorization();
-
 app.MapControllers();
+
+using var scope = app.Services.CreateScope();
+try
+{
+    var test = scope.ServiceProvider.GetRequiredService<MinioService>();
+    Console.WriteLine("MinioService inyectado correctamente");
+}
+catch (Exception ex)
+{
+    Console.WriteLine("Error inyectando MinioService: " + ex.Message);
+}
 
 app.Run();
