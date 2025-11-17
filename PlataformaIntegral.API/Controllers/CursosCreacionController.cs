@@ -64,5 +64,57 @@ namespace PlataformaIntegral.API.Controllers
             await _crearCursoService.PublicarCursoAsync(cursoId);
             return Ok(new { Mensaje = "Curso publicado exitosamente." });
         }
+
+        // -------------------------------------
+        // Más métodos para edición y eliminación pueden añadirse aquí
+        // -------------------------------------
+
+        [HttpPut("{cursoId}/Modificar")]
+        public async Task<IActionResult> ModificarCursoPregrabado([FromRoute] int cursoId, [FromForm] CursoPregrabadoDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Datos del curso inválidos.");
+            await _crearCursoService.ModificarCursoPregrabadoAsync(cursoId, dto);
+            return Ok(new { Mensaje = "Curso modificado exitosamente." });
+        }
+
+        [HttpPut("capitulo/{capituloId}/Modificar")]
+        public async Task<IActionResult> ModificarCapitulo([FromRoute] int capituloId, [FromBody] string nuevoNombre)
+        {
+            if (string.IsNullOrWhiteSpace(nuevoNombre))
+                return BadRequest("El nombre del capítulo no puede estar vacío.");
+            await _crearCursoService.ModificarCapituloAsync(capituloId, nuevoNombre);
+            return Ok(new { Mensaje = "Capítulo modificado exitosamente." });
+        }
+
+        [HttpPut("video/{videoId}/Modificar")]
+        public async Task<IActionResult> ModificarVideo([FromRoute] int videoId, [FromForm] VideoDto dto)
+        {
+            if (dto == null)
+                return BadRequest("Datos del video inválidos.");
+            await _crearCursoService.ModificarVideoAsync(videoId, dto);
+            return Ok(new { Mensaje = "Video modificado exitosamente." });
+        }
+
+        [HttpDelete("capitulo/{capituloId}/Eliminar")]
+        public async Task<IActionResult> EliminarCapitulo([FromRoute] int capituloId)
+        {
+            await _crearCursoService.EliminarCapituloAsync(capituloId);
+            return Ok(new { Mensaje = "Capítulo eliminado exitosamente." });
+        }
+
+        [HttpDelete("video/{videoId}/Eliminar")]
+        public async Task<IActionResult> EliminarVideo([FromRoute] int videoId)
+        {
+            await _crearCursoService.EliminarVideoAsync(videoId);
+            return Ok(new { Mensaje = "Video eliminado exitosamente." });
+        }
+
+        [HttpDelete("{cursoId}/Eliminar")]
+        public async Task<IActionResult> EliminarCurso([FromRoute] int cursoId)
+        {
+            await _crearCursoService.EliminarCursoAsync(cursoId);
+            return Ok(new { Mensaje = "Curso eliminado exitosamente." });
+        }
     }
 }

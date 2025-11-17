@@ -33,6 +33,7 @@ namespace PlataformaIntegral.API.Profiles
                 .ForMember(dest => dest.NombreEstudiante, opt => opt.MapFrom(src => src.Estudiante.Usuario.Nombre));
 
             CreateMap<Curso, CursoCardDto>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.IdProducto))
                 .ForMember(dest => dest.Titulo, opt => opt.MapFrom(src => src.Producto.Nombre))
                 .ForMember(dest => dest.Precio, opt => opt.MapFrom(src => src.Producto.Precio))
                 .ForMember(dest => dest.PortadaUrl, opt => opt.MapFrom(src => src.CursoPregrabado != null ? src.CursoPregrabado.UrlPortada : "curso Sincronico")) //Añadir portada para el curso sincrónico.

@@ -41,14 +41,19 @@ public class CrearCursoService : ICrearCursoService
 
             var curso = new Curso
             {
+                IdProducto = producto.IdProducto,
                 Estado = EstadoCursoEnum.Borrador,
                 Producto = producto
             };
 
             var cursoPregrabado = new CursoPregrabado
             {
+                IdCurso = curso.IdProducto,
                 Curso = curso,
-                PrecioPuntos = dto.PrecioPuntos
+                PrecioPuntos = dto.PrecioPuntos,
+                UrlPortada = dto.Portada != null
+                    ? await _storage.UploadImageAsync(dto.Portada)
+                    : null
             };
 
             _context.CursoPregrabados.Add(cursoPregrabado);
@@ -153,4 +158,270 @@ public class CrearCursoService : ICrearCursoService
 
         await _context.SaveChangesAsync();
     }
+
+    public async Task ModificarCursoPregrabadoAsync(int cursoId, CursoPregrabadoDto dto)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var curso = await _context.Cursos
+                .Include(c => c.Producto)
+                .Include(c => c.CursoPregrabado)
+                .FirstOrDefaultAsync(c => c.IdProducto == cursoId);
+
+            if (curso == null)
+                throw new Exception($"Curso {cursoId} no encontrado.");
+
+            // Producto
+            curso.Producto.Nombre = dto.Titulo ?? curso.Producto.Nombre;
+            curso.Producto.Descripcion = dto.Descripcion ?? curso.Producto.Descripcion;
+            curso.Producto.Precio = dto.Precio != 0 ? dto.Precio : curso.Producto.Precio;
+
+            // CursoPregrabado
+            curso.CursoPregrabado.PrecioPuntos =
+                dto.PrecioPuntos != 0 ? dto.PrecioPuntos : curso.CursoPregrabado.PrecioPuntos;
+
+            // Portada nueva?
+            if (dto.Portada != null)
+            {
+                var nuevaKey = await _storage.UploadImageAsync(dto.Portada);
+                curso.CursoPregrabado.UrlPortada = nuevaKey;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task ModificarCapituloAsync(int capituloId, string nuevoNombre)
+    {
+        var capitulo = await _context.Capitulos.FindAsync(capituloId);
+
+        if (capitulo == null)
+            throw new Exception($"Capítulo {capituloId} no encontrado.");
+
+        capitulo.Nombre = nuevoNombre;
+
+        await _context.SaveChangesAsync();
+    }
+
+    public async Task ModificarVideoAsync(int videoId, VideoDto dto)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var video = await _context.Videos
+                .Include(v => v.Recurso)
+                .FirstOrDefaultAsync(v => v.IdRecurso == videoId);
+
+            if (video == null)
+                throw new Exception($"Video {videoId} no encontrado.");
+
+            // 1. Cambiar nombre
+            if (!string.IsNullOrWhiteSpace(dto.Nombre))
+                video.Recurso.Nombre = dto.Nombre;
+
+            // 2. ¿Reemplazar archivo?
+            if (dto.Archivo != null)
+            {
+                var newKey = await _storage.UploadVideoAsync(dto.Archivo);
+                video.Recurso.Url = newKey;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task EliminarVideoAsync(int videoId)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var video = await _context.Videos
+                .Include(v => v.Recurso)
+                .FirstOrDefaultAsync(v => v.IdRecurso == videoId);
+
+            if (video == null)
+                throw new Exception($"Video {videoId} no encontrado.");
+
+            var key = video.Recurso.Url;
+
+            _context.Recursos.Remove(video.Recurso);
+            _context.Videos.Remove(video);
+
+            await _context.SaveChangesAsync();
+
+            // si quieres eliminarlo físicamente del bucket
+            // await _storage.DeleteFileAsync(key);
+
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task EliminarCapituloAsync(int capituloId)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            var capitulo = await _context.Capitulos
+                .Include(c => c.Videos)
+                    .ThenInclude(v => v.Recurso)
+                .FirstOrDefaultAsync(c => c.IdCapitulo == capituloId);
+
+            if (capitulo == null)
+                throw new Exception($"Capítulo {capituloId} no encontrado.");
+
+            var cursoId = capitulo.IdCursoPregrabado;
+
+            // =====================================
+            // 1. Eliminar videos y recursos
+            // =====================================
+            foreach (var video in capitulo.Videos)
+            {
+                var key = video.Recurso.Url;
+
+                _context.Recursos.Remove(video.Recurso);
+                _context.Videos.Remove(video);
+
+                // ← si quieres borrar físicamente del bucket
+                // await _storage.DeleteFileAsync(key);
+            }
+
+            // =====================================
+            // 2. Eliminar capítulo
+            // =====================================
+            _context.Capitulos.Remove(capitulo);
+            await _context.SaveChangesAsync();
+
+            // =====================================
+            // 3. Reordenar capítulos restantes
+            // =====================================
+            var capitulosRestantes = await _context.Capitulos
+                .Where(c => c.IdCursoPregrabado == cursoId)
+                .OrderBy(c => c.NumeroOrden)
+                .ToListAsync();
+
+            int numero = 1;
+            foreach (var c in capitulosRestantes)
+            {
+                c.NumeroOrden = numero++;
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
+    public async Task EliminarCursoAsync(int cursoId)
+    {
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
+        {
+            // =========================================
+            // 1. Cargar curso + producto + pregrabado
+            // =========================================
+            var curso = await _context.Cursos
+                .Include(c => c.Producto)
+                .Include(c => c.CursoPregrabado)
+                    .ThenInclude(cp => cp.Capitulos)
+                        .ThenInclude(cap => cap.Videos)
+                            .ThenInclude(v => v.Recurso)
+                .FirstOrDefaultAsync(c => c.IdProducto == cursoId);
+
+            if (curso == null)
+                throw new Exception($"El curso {cursoId} no existe.");
+
+            // =========================================
+            // 2. Si tiene portada → eliminar archivo MinIO
+            // =========================================
+            if (curso.CursoPregrabado?.UrlPortada != null)
+            {
+                try
+                {
+                    // borrar físicamente del bucket
+                    // await _storage.DeleteFileAsync(curso.CursoPregrabado.UrlPortada);
+                }
+                catch
+                {
+                    // opcional: log
+                }
+            }
+
+            // =========================================
+            // 3. Eliminar capítulos → videos → recursos
+            // =========================================
+            var capitulos = curso.CursoPregrabado?.Capitulos?.ToList() ?? new List<Capitulo>();
+
+            foreach (var capitulo in capitulos)
+            {
+                foreach (var video in capitulo.Videos)
+                {
+                    var key = video.Recurso.Url;
+
+                    // borrar archivo real del bucket
+                    // await _storage.DeleteFileAsync(key);
+
+                    _context.Recursos.Remove(video.Recurso);
+                    _context.Videos.Remove(video);
+                }
+
+                _context.Capitulos.Remove(capitulo);
+            }
+
+            // =========================================
+            // 4. Eliminar el curso pregrabado
+            // =========================================
+            if (curso.CursoPregrabado != null)
+                _context.CursoPregrabados.Remove(curso.CursoPregrabado);
+
+            // =========================================
+            // 5. Eliminar el curso
+            // =========================================
+            _context.Cursos.Remove(curso);
+
+            // =========================================
+            // 6. Eliminar producto asociado
+            // =========================================
+            if (curso.Producto != null)
+                _context.Productos.Remove(curso.Producto);
+
+            // =========================================
+            // 7. Guardar y confirmar transacción
+            // =========================================
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
+    }
+
 }

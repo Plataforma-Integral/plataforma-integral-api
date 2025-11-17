@@ -24,16 +24,29 @@ namespace PlataformaIntegral.API.Services
         {
             TimeSpan expiry = TimeSpan.FromMinutes(60);
 
-            foreach (var curso in cursos)
-            {
-                if (!string.IsNullOrEmpty(curso.PortadaUrl))
+            var tareas = cursos
+                .Where(c => !string.IsNullOrEmpty(c.PortadaUrl) &&
+                            c.PortadaUrl != "ninguna" &&
+                            c.PortadaUrl != "null")
+                .Select(async curso =>
                 {
-                    curso.PortadaUrl =
-                        await _storage.GetImageUrlAsync(curso.PortadaUrl, expiry);
-                }
-            }
+                    try
+                    {
+                        curso.PortadaUrl =
+                            await _storage.GetImageUrlAsync(curso.PortadaUrl!, expiry);
+                    }
+                    catch (Exception ex)
+                    {
+                        // Opcional: log
+                        // _logger.LogWarning(ex, $"Portada no encontrada: {curso.PortadaUrl}");
 
+                        curso.PortadaUrl = null;  // o mantener la original
+                    }
+                });
+
+            await Task.WhenAll(tareas);
         }
+
 
         // ---------------------------
         // 1. Cursos Populares
@@ -43,6 +56,15 @@ namespace PlataformaIntegral.API.Services
             var cursos = await _context.Cursos
                 .OrderByDescending(c => c.Producto.Pagos.Count(p => p.EstadoPago.Nombre == "Aprobado"))
                 .Take(limite)
+                .ToListAsync();
+
+            cursos = await _context.Cursos
+                .Include(c => c.Producto)              // necesario para Precio y Titulo
+                .Include(c => c.CursoPregrabado)       // necesario para PortadaUrl
+                .Include(c => c.Categorias)            // necesario para Categorias
+                .Include(c => c.ProfesorCursos)
+                    .ThenInclude(pc => pc.Profesor)   // necesario para Profesores
+                .ThenInclude(p => p.Usuario)          // si quieres Nombre y Apellido
                 .ToListAsync();
 
             var dtos = _mapper.Map<List<CursoCardDto>>(cursos);
@@ -61,6 +83,15 @@ namespace PlataformaIntegral.API.Services
             var cursos = await _context.Cursos
                 .OrderByDescending(c => c.Producto.FechaCreacion)
                 .Take(limite)
+                .ToListAsync();
+
+            cursos = await _context.Cursos
+                .Include(c => c.Producto)              // necesario para Precio y Titulo
+                .Include(c => c.CursoPregrabado)       // necesario para PortadaUrl
+                .Include(c => c.Categorias)            // necesario para Categorias
+                .Include(c => c.ProfesorCursos)
+                    .ThenInclude(pc => pc.Profesor)   // necesario para Profesores
+                .ThenInclude(p => p.Usuario)          // si quieres Nombre y Apellido
                 .ToListAsync();
 
             var dtos = _mapper.Map<List<CursoCardDto>>(cursos);
@@ -94,6 +125,24 @@ namespace PlataformaIntegral.API.Services
                 .Take(tamañoPagina)
                 .ToListAsync();
 
+            cursos = await _context.Cursos
+                .Include(c => c.Producto)              // necesario para Precio y Titulo
+                .Include(c => c.CursoPregrabado)       // necesario para PortadaUrl
+                .Include(c => c.Categorias)            // necesario para Categorias
+                .Include(c => c.ProfesorCursos)
+                    .ThenInclude(pc => pc.Profesor)   // necesario para Profesores
+                .ThenInclude(p => p.Usuario)          // si quieres Nombre y Apellido
+                .ToListAsync();
+
+            cursos = await _context.Cursos
+                .Include(c => c.Producto)              // necesario para Precio y Titulo
+                .Include(c => c.CursoPregrabado)       // necesario para PortadaUrl
+                .Include(c => c.Categorias)            // necesario para Categorias
+                .Include(c => c.ProfesorCursos)
+                    .ThenInclude(pc => pc.Profesor)   // necesario para Profesores
+                .ThenInclude(p => p.Usuario)          // si quieres Nombre y Apellido
+                .ToListAsync();
+
             var dtos = _mapper.Map<List<CursoCardDto>>(cursos);
 
             await AsignarPortadasPresignadasAsync(dtos);
@@ -111,6 +160,15 @@ namespace PlataformaIntegral.API.Services
                 .Where(c => c.Categorias.Any(cc => cc.IdCategoria == categoriaId))
                 .Skip((pagina - 1) * tamañoPagina)
                 .Take(tamañoPagina)
+                .ToListAsync();
+
+            cursos = await _context.Cursos
+                .Include(c => c.Producto)              // necesario para Precio y Titulo
+                .Include(c => c.CursoPregrabado)       // necesario para PortadaUrl
+                .Include(c => c.Categorias)            // necesario para Categorias
+                .Include(c => c.ProfesorCursos)
+                    .ThenInclude(pc => pc.Profesor)   // necesario para Profesores
+                .ThenInclude(p => p.Usuario)          // si quieres Nombre y Apellido
                 .ToListAsync();
 
             var dtos = _mapper.Map<List<CursoCardDto>>(cursos);
@@ -152,6 +210,15 @@ namespace PlataformaIntegral.API.Services
                         )
                     )
                 )
+                .ToListAsync();
+
+            cursos = await _context.Cursos
+                .Include(c => c.Producto)              // necesario para Precio y Titulo
+                .Include(c => c.CursoPregrabado)       // necesario para PortadaUrl
+                .Include(c => c.Categorias)            // necesario para Categorias
+                .Include(c => c.ProfesorCursos)
+                    .ThenInclude(pc => pc.Profesor)   // necesario para Profesores
+                .ThenInclude(p => p.Usuario)          // si quieres Nombre y Apellido
                 .ToListAsync();
 
             return _mapper.Map<List<CursoCardDto>>(cursos);
