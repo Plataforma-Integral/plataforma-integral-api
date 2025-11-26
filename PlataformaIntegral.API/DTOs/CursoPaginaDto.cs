@@ -7,6 +7,7 @@
         public string? PortadaUrl { get; set; }
         public decimal Precio { get; set; }
         public decimal? PrecioPuntos { get; set; }
+        public bool? Comprado { get; set; }
         public string? Descripcion { get; set; }
         public List<string?>? Categorias { get; set; } = new();
         public List<CapituloDto>? Capitulos { get; set; } = new();

@@ -15,27 +15,32 @@ namespace PlataformaIntegral.API.Controllers
             _authService = authService;
         }
 
-        /// Registro de usuario
-        [HttpPost("register")]
-        public async Task<IActionResult> Register(RegisterDto dto)
-        {
-            var result = await _authService.RegisterAsync(dto);
-
-            if (result == null || !result.Success)
-                return BadRequest(new AuthResponseDto { Success = false, Message = "Error en registro" });
-
-
-            return Ok(result);
-        }
-
         /// Login
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginDto dto)
         {
             var result = await _authService.LoginAsync(dto);
+            if (result == null)
+                return BadRequest(new AuthResponseDto { Success = false, Message = "No existe ese Usuario" });
+
+            if (!result.Success)
+                return BadRequest(result);
+
+            return Ok(result);
+        }
+
+        /// Registro de usuario
+        [HttpPost("register")]
+        public async Task<IActionResult> Register(RegisterDto dto)
+        {
+            if(dto.Contrasena == null || dto.Email == null)
+                return BadRequest(new AuthResponseDto { Success = false, Message = "Email y Contraseña son obligatorios" });
+
+            var result = await _authService.RegisterAsync(dto);
 
             if (result == null || !result.Success)
-                return BadRequest(new AuthResponseDto { Success = false, Message = "Credenciales inválidas" });
+                return BadRequest(new AuthResponseDto { Success = false, Message = "Error en registro" });
+
 
             return Ok(result);
         }

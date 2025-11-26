@@ -33,14 +33,24 @@ namespace PlataformaIntegral.API.Services.Auth
                 .ThenInclude(u => u.TipoUsuario)
                 .FirstOrDefaultAsync(c => c.Email == dto.Email);
 
-            if (credencial == null || credencial.Contrasena == null ||
-                !BCrypt.Net.BCrypt.Verify(dto.Contrasena, credencial.Contrasena))
+            if (credencial == null)
+            {
                 return null;
+            }
+            if (credencial.Contrasena == null ||
+                !BCrypt.Net.BCrypt.Verify(dto.Contrasena, credencial.Contrasena)){
+                AuthResponseDto authResponseDto = new AuthResponseDto()
+                {
+                    Success = false,
+                    Message = "Credenciales inválidas"
+                };
+                return authResponseDto;
+            }
 
             return GenerateToken(credencial.Usuario);
         }
 
-        // Reemplazar el método RegisterAsync existente para que coincida con la interfaz
+
         public async Task<AuthResponseDto> RegisterAsync(RegisterDto dto)
         {
             // Verificar si ya existe el email
@@ -56,7 +66,7 @@ namespace PlataformaIntegral.API.Services.Auth
                 Nombre = dto.Nombre,
                 Apellido = dto.Apellido,
                 FechaRegistro = DateTime.UtcNow,
-                IdTipoUsuario = dto.IdTipoUsuario ?? 3 // 3 = Estudiante por defecto
+                IdTipoUsuario = dto.IdTipoUsuario > 0 || dto.IdTipoUsuario < 4  ? dto.IdTipoUsuario : 1 // 1 = Estudiante por defecto
             };
 
             _context.Usuarios.Add(usuario);
@@ -113,49 +123,7 @@ namespace PlataformaIntegral.API.Services.Auth
                     Message = "Error al crear la cuenta"
                 };
 
-            if (credencial == null ||
-                credencial.Contrasena == null ||
-                !BCrypt.Net.BCrypt.Verify(dto.Contrasena, credencial.Contrasena))
-            {
-                return new AuthResponseDto
-                {
-                    Token = null,
-                    Success = false,
-                    Message = "Credenciales incorrectas"
-                };
-            }
-
-
             return GenerateToken(usuarioCompleto);
-        }
-
-        // Implementar el método GenerateJwtToken requerido por la interfaz
-        public string GenerateJwtToken(string email, int idUsuario, string role)
-        {
-            var claims = new[]
-            {
-                new Claim(JwtRegisteredClaimNames.Sub, idUsuario.ToString()),
-                new Claim(ClaimTypes.Role, role),
-                new Claim(JwtRegisteredClaimNames.Email, email)
-            };
-
-            var key = new SymmetricSecurityKey(
-                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
-            );
-
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var expiration = DateTime.UtcNow.AddHours(3);
-
-            var token = new JwtSecurityToken(
-                issuer: _config["Jwt:Issuer"],
-                audience: _config["Jwt:Audience"],
-                claims: claims,
-                expires: expiration,
-                signingCredentials: creds
-            );
-
-            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         private AuthResponseDto GenerateToken(Usuario usuario)
@@ -196,6 +164,34 @@ namespace PlataformaIntegral.API.Services.Auth
                 Nombre = usuario.Nombre,
                 Apellido = usuario.Apellido
             };
+        }
+
+        public string GenerateJwtToken(string email, int idUsuario, string role)
+        {
+            var claims = new[]
+            {
+                new Claim(JwtRegisteredClaimNames.Sub, idUsuario.ToString()),
+                new Claim(ClaimTypes.Role, role),
+                new Claim(JwtRegisteredClaimNames.Email, email)
+            };
+
+            var key = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(_config["Jwt:Key"]!)
+            );
+
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+            var expiration = DateTime.UtcNow.AddHours(3);
+
+            var token = new JwtSecurityToken(
+                issuer: _config["Jwt:Issuer"],
+                audience: _config["Jwt:Audience"],
+                claims: claims,
+                expires: expiration,
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
     }
 }

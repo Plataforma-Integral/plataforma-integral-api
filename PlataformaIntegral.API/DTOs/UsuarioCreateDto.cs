@@ -38,8 +38,7 @@ namespace PlataformaIntegral.API.DTOs
         [StringLength(100)]
         public string? NivelEducativo { get; set; }
 
-        [Required]
-        public CredencialCreateDto Credencial { get; set; } = null!;
-        public ConfigPrivacidadCreateDto Config { get; set; } = null!;
+        public CredencialCreateDto? Credencial { get; set; } = null!;
+        public ConfigPrivacidadCreateDto? Config { get; set; } = null!;
     }
 }

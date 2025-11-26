@@ -206,7 +206,7 @@ namespace PlataformaIntegral.API.Services
                         p.EstadoPago.Nombre == "Aprobado" &&
                         (
                             (p.Recibo != null && p.Recibo.IdUsuario == usuarioId) // caso recibo
-                            || (p.IdUsuario != null && p.IdUsuario == usuarioId)  // caso FK directa en pago
+                            || (p.IdUsuario == usuarioId)  // caso FK directa en pago
                         )
                     )
                 )
@@ -225,7 +225,7 @@ namespace PlataformaIntegral.API.Services
         }
 
 
-        public async Task<CursoPaginaDto?> ObtenerPaginaCursoAsync(int cursoId, int? usuarioId = null)
+        public async Task<CursoPaginaDto?> ObtenerPaginaCursoAsync(int cursoId, int? usuarioId = null, string? rol = null)
         {
             // 1) Traer curso con capitulos + recursos (proyección parcial)
             var cursoQuery = await _context.Cursos
@@ -300,6 +300,18 @@ namespace PlataformaIntegral.API.Services
                 }
             }
 
+            bool comprado = false;
+            if (usuarioId.HasValue)
+            {
+                comprado = await _context.Pagos
+                    .Where(c => c.EstadoPago.Nombre == "Aprobado")
+                    .AnyAsync(c => c.IdUsuario == usuarioId.Value && c.IdProducto == cursoId);
+            }
+            else if(rol == "Administrador")
+            {
+                comprado = true;
+            }
+
             // 3) Construir DTO final
             var cursoDto = new CursoPaginaDto
             {
@@ -308,6 +320,8 @@ namespace PlataformaIntegral.API.Services
                 Descripcion = cursoQuery.Descripcion,
                 PortadaUrl = cursoQuery.PortadaUrl,
                 Precio = cursoQuery.Precio,
+                PrecioPuntos = cursoQuery.PrecioPuntos,
+                Comprado = comprado,
                 Categorias = cursoQuery.Categorias,
                 FechaCreacion = cursoQuery.FechaCreacion,
                 Profesores = cursoQuery.Profesores.Select(p => new ProfesorSimpleDto
@@ -353,7 +367,7 @@ namespace PlataformaIntegral.API.Services
 
             return cursoDto;
         }
-        public async Task<List<Uri>> ObtenerUrlsDescargaCursoAsync(int cursoId, int usuarioId, int minutesExpiry)
+        public async Task<List<Uri>> ObtenerUrlsDescargaCursoAsync(int cursoId, int usuarioId, int minutesExpiry, string? rol = null)
         {
             // Validar que es curso pregrabado
             var cursoPre = await _context.Cursos
@@ -369,9 +383,14 @@ namespace PlataformaIntegral.API.Services
                 p.EstadoPago.Nombre == "Aprobado" &&
                 (
                     (p.Recibo != null && p.Recibo.IdUsuario == usuarioId) ||
-                    (p.IdUsuario != null && p.IdUsuario == usuarioId)
+                    (p.IdUsuario == usuarioId)
                 )
             );
+
+            if(rol != null && rol == "Administrador")
+            {
+                comprado = true;
+            }
 
             if (!comprado)
                 return new List<Uri>();
@@ -396,7 +415,7 @@ namespace PlataformaIntegral.API.Services
             return urls;
         }
 
-        public async Task<VideoDetalleDto?> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutesUrlExpiry)
+        public async Task<VideoDetalleDto?> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutesUrlExpiry, string? rol = null)
         {
             // 1) Obtener video + curso + recurso
             var videoData = await _context.Videos
@@ -418,9 +437,10 @@ namespace PlataformaIntegral.API.Services
                 p.EstadoPago.Nombre == "Aprobado" &&
                 (
                     (p.Recibo != null && p.Recibo.IdUsuario == usuarioId) ||
-                    (p.IdUsuario != null && p.IdUsuario == usuarioId)
+                    (p.IdUsuario == usuarioId)
                 )
             );
+
             if (!tieneAcceso)
                 return null;
             // 3) Generar URL presignada

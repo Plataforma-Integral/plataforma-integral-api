@@ -1,4 +1,7 @@
-﻿namespace PlataformaIntegral.API.Services.Auth
+﻿using PlataformaIntegral.API.DTOs.Auth;
+using PlataformaIntegral.API.Models;
+
+namespace PlataformaIntegral.API.Services.Auth
 {
     public interface IAuthService
     {

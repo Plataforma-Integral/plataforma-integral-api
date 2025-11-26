@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using PlataformaIntegral.API.DTOs;
 using PlataformaIntegral.API.Services;
@@ -7,6 +8,7 @@ namespace PlataformaIntegral.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Authorize(Roles = "Profesor, Administrador")]
     public class CursosCreacionController : ControllerBase
     {
         private readonly ICrearCursoService _crearCursoService;

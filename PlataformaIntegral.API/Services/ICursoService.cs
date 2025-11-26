@@ -14,9 +14,9 @@ namespace PlataformaIntegral.API.Services
 
         // Nuevos:
         Task<List<CursoCardDto>> ObtenerCursosPorUsuarioAsync(int usuarioId); // cursos comprados/inscritos
-        Task<CursoPaginaDto?> ObtenerPaginaCursoAsync(int cursoId, int? usuarioId = null); // usuarioId opcional para ver statuses
+        Task<CursoPaginaDto?> ObtenerPaginaCursoAsync(int cursoId, int? usuarioId = null, string? rol = null); // usuarioId opcional para ver statuses
         //Task<Stream?> DescargarCursoZipAsync(int cursoId, int usuarioId, CancellationToken ct); // stream zip (null si no autorizado o no pregrabado)
-        Task<List<Uri>> ObtenerUrlsDescargaCursoAsync(int cursoId, int usuarioId, int minutesuUrlExpiry); // alternativa: lista de presigned URLs
-        Task<VideoDetalleDto?> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutesUrlExpiry);
+        Task<List<Uri>> ObtenerUrlsDescargaCursoAsync(int cursoId, int usuarioId, int minutesuUrlExpiry, string? rol = null); // alternativa: lista de presigned URLs
+        Task<VideoDetalleDto?> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutesUrlExpiry, string? rol = null);
     }
 }

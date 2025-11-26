@@ -37,7 +37,7 @@ namespace PlataformaIntegral.API.Services
             var usuario = _context.Usuarios.Find(id);
             if (usuario == null)
                 return false;
-
+            
             _mapper.Map(dto, usuario);
             await _context.SaveChangesAsync();
             return true;

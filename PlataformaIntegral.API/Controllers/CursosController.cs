@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using PlataformaIntegral.API.DTOs;
 using PlataformaIntegral.API.Services;
+using System.Security.Claims;
 
 namespace PlataformaIntegral.API.Controllers
 {
     [ApiController]
     [Route("api/v1/[controller]")]
+    [Authorize] // 🔒 JWT Authentication required
     public class CursosController : ControllerBase
     {
         private readonly ICursoService _cursoService;
@@ -87,7 +90,13 @@ namespace PlataformaIntegral.API.Controllers
         [HttpGet("{cursoId}/pagina")]
         public async Task<IActionResult> ObtenerPaginaCurso([FromRoute] int cursoId, [FromQuery] int? usuarioId = null)
         {
-            var curso = await _cursoService.ObtenerPaginaCursoAsync(cursoId, usuarioId);
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (usuarioId != userId & userRole != "Administrador")
+                return Forbid(); // No puedes modificar otro usuario
+
+            var curso = await _cursoService.ObtenerPaginaCursoAsync(cursoId, usuarioId, userRole);
 
             if (curso == null)
                 return NotFound("El curso no existe.");
@@ -104,8 +113,30 @@ namespace PlataformaIntegral.API.Controllers
             [FromQuery] int usuarioId,
             [FromQuery] int minutosExpiracion = 60)
         {
-            var urls = await _cursoService.ObtenerUrlsDescargaCursoAsync(cursoId, usuarioId, minutosExpiracion);
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (usuarioId != userId & userRole != "Administrador")
+                return Forbid(); // No puedes modificar otro usuario
+
+            var urls = await _cursoService.ObtenerUrlsDescargaCursoAsync(cursoId, usuarioId, minutosExpiracion, userRole);
             return Ok(urls.Select(u => u.ToString()));
+        }
+
+        // --------------------------------------
+        // 8. OBTENER DETALLES DEL VIDEO
+        // --------------------------------------
+        [HttpGet("videos/{videoId}/stream")]
+        public async Task<IActionResult> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutosExpiracion)
+        {
+            var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+            var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            if (usuarioId != userId & userRole != "Administrador")
+                return Forbid(); // No puedes modificar otro usuario
+
+            var video = await _cursoService.ObtenerVideoDetalleAsync(videoId, usuarioId, minutosExpiracion, userRole);
+            return Ok(video);
         }
     }
 }
