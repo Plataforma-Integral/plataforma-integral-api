@@ -38,7 +38,7 @@ namespace PlataformaIntegral.API.Services
                     catch (Exception ex)
                     {
                         // Opcional: log
-                        // _logger.LogWarning(ex, $"Portada no encontrada: {curso.PortadaUrl}");
+                        //_logger.LogWarning(ex, $"Portada no encontrada: {curso.PortadaUrl}");
 
                         curso.PortadaUrl = null;  // o mantener la original
                     }

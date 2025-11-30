@@ -6,6 +6,7 @@ using PlataformaIntegral.API.Services;
 using PlataformaIntegral.API.Services.Auth;
 using System.Text;
 using Minio;
+using System.Diagnostics;
 
 // -------------------- CONFIGURACIÓN INICIAL --------------------
 
@@ -96,7 +97,7 @@ builder.Services.AddCors(options =>
 
 // -------------------- CONFIGURAR MINIO --------------------
 
-//string minioNetworkEndpoint = "http://minio:9000"; // red Docker
+string minioNetworkEndpoint = "http://minio:9000"; // red Docker
 string minioLocalEndpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000"; // local
 string minioAccessKey = builder.Configuration["Minio:AccessKey"] ?? "AdminPI";
 string minioSecretKey = builder.Configuration["Minio:SecretKey"] ?? "CREDENCIAL_ELIMINADA";
@@ -106,12 +107,6 @@ var minioPort = 9000;
 var useSSL = false;
 
 IMinioClient? minioClient = null;
-
-var client = new MinioClient()
-            .WithEndpoint(minioHost, minioPort)
-            .WithCredentials(minioAccessKey, minioSecretKey)
-            .WithSSL(useSSL)
-            .Build();
 
 async Task<bool> TestMinioConnectionAsync(IMinioClient client)
 {
@@ -126,66 +121,37 @@ async Task<bool> TestMinioConnectionAsync(IMinioClient client)
     }
 }
 
-if (await TestMinioConnectionAsync(client))
-{
-    Console.WriteLine($" Conectado a MinIO local: {minioLocalEndpoint}");
-    minioClient = client;
-}
-else
-{
-    Console.WriteLine($" No se pudo conectar a ningún servidor MinIO.");
-}
-
-
 /* Probar conexión a MinIO en red Docker primero, si falla probar localhost*/
-/*
 try
 {
-    Console.WriteLine($"Intentando conectar a MinIO (red Docker)...");
-
-    var client = new MinioClient()
+    minioClient = new MinioClient()
         .WithEndpoint(minioNetworkEndpoint)
         .WithCredentials(minioAccessKey, minioSecretKey)
         .Build();
 
-    if (await TestMinioConnectionAsync(client))
+    if (!await TestMinioConnectionAsync(minioClient))
     {
-        Console.WriteLine($" Conectado a MinIO en red Docker: {minioNetworkEndpoint}");
-        minioClient = client;
-    }
-    else
-    {
-        Console.WriteLine($" No se pudo conectar a MinIO en red. Probando localhost...");
-
-        client = new MinioClient()
+        // fallback a localhost
+        minioClient = new MinioClient()
             .WithEndpoint(minioLocalEndpoint)
             .WithCredentials(minioAccessKey, minioSecretKey)
             .Build();
 
-        if (await TestMinioConnectionAsync(client))
+        if (!await TestMinioConnectionAsync(minioClient))
         {
-            Console.WriteLine($" Conectado a MinIO local: {minioLocalEndpoint}");
-            minioClient = client;
-        }
-        else
-        {
-            Console.WriteLine($" No se pudo conectar a ningún servidor MinIO.");
+            Console.WriteLine("No se pudo conectar a ningún servidor MinIO, usando cliente dummy.");
+            minioClient = new MinioClient(); // Cliente vacío para no romper DI
         }
     }
 }
-catch (Exception ex)
+catch
 {
-    Console.WriteLine($"Error al conectar con MinIO: {ex.Message}");
+    minioClient = new MinioClient(); // Cliente vacío para no romper DI
 }
-*/
 
-if (minioClient != null)
-{
-    // Registrar correctamente como la interfaz
-    builder.Services.AddSingleton<IMinioClient>(minioClient);
-    builder.Services.AddSingleton(minioClient);
-    builder.Services.AddScoped<MinioService>();
-}
+// Registrar siempre
+builder.Services.AddSingleton<IMinioClient>(minioClient);
+builder.Services.AddScoped<MinioService>();
 
 // Configurar Kestrel para escuchar en el puerto 5020
 builder.WebHost.ConfigureKestrel(options =>
