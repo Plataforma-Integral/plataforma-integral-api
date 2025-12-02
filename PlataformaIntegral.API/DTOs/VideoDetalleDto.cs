@@ -7,6 +7,7 @@
         public string? Descripcion { get; set; }
         public TimeSpan? Duracion { get; set; }
         public string? PresignedUrl { get; set; }
+        public string? Miniatura { get; set; }
         public string? MimeType { get; set; }
         public long? TamañoBytes { get; set; }
     }

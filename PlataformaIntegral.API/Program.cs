@@ -97,14 +97,10 @@ builder.Services.AddCors(options =>
 
 // -------------------- CONFIGURAR MINIO --------------------
 
-string minioNetworkEndpoint = "http://minio:9000"; // red Docker
-string minioLocalEndpoint = builder.Configuration["Minio:Endpoint"] ?? "http://localhost:9000"; // local
+string minioNetworkEndpoint = "minio:9000"; // red Docker
+string minioLocalEndpoint = builder.Configuration["Minio:Endpoint"] ?? "localhost:9000"; // local
 string minioAccessKey = builder.Configuration["Minio:AccessKey"] ?? "AdminPI";
 string minioSecretKey = builder.Configuration["Minio:SecretKey"] ?? "CREDENCIAL_ELIMINADA";
-// Temporales, se deben pasar a appsettings.json
-var minioHost = "localhost";
-var minioPort = 9000;
-var useSSL = false;
 
 IMinioClient? minioClient = null;
 
@@ -115,39 +111,17 @@ async Task<bool> TestMinioConnectionAsync(IMinioClient client)
         await client.ListBucketsAsync();
         return true;
     }
-    catch
+    catch (Exception ex)
     {
         return false;
     }
 }
 
 /* Probar conexión a MinIO en red Docker primero, si falla probar localhost*/
-try
-{
-    minioClient = new MinioClient()
-        .WithEndpoint(minioNetworkEndpoint)
+minioClient = new MinioClient()
+        .WithEndpoint(minioLocalEndpoint) //Cambiar despues por minioNetworkEndpoint
         .WithCredentials(minioAccessKey, minioSecretKey)
         .Build();
-
-    if (!await TestMinioConnectionAsync(minioClient))
-    {
-        // fallback a localhost
-        minioClient = new MinioClient()
-            .WithEndpoint(minioLocalEndpoint)
-            .WithCredentials(minioAccessKey, minioSecretKey)
-            .Build();
-
-        if (!await TestMinioConnectionAsync(minioClient))
-        {
-            Console.WriteLine("No se pudo conectar a ningún servidor MinIO, usando cliente dummy.");
-            minioClient = new MinioClient(); // Cliente vacío para no romper DI
-        }
-    }
-}
-catch
-{
-    minioClient = new MinioClient(); // Cliente vacío para no romper DI
-}
 
 // Registrar siempre
 builder.Services.AddSingleton<IMinioClient>(minioClient);

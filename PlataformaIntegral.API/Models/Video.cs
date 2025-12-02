@@ -29,6 +29,11 @@ public partial class Video
     [Unicode(false)]
     public string? Tipo { get; set; }
 
+    [Column("miniatura")]
+    [StringLength(200)]
+    [Unicode(false)]
+    public string? Miniatura { get; set; }
+
     public virtual ICollection<Documento> Documentos { get; set; } = new List<Documento>();
 
     [ForeignKey("IdCapitulo")]
