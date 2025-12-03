@@ -1,12 +1,14 @@
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
+using Minio;
 using PlataformaIntegral.API.Models;
 using PlataformaIntegral.API.Services;
 using PlataformaIntegral.API.Services.Auth;
-using System.Text;
-using Minio;
 using System.Diagnostics;
+using System.Text;
+using Xabe.FFmpeg;
 
 // -------------------- CONFIGURACIÓN INICIAL --------------------
 
@@ -127,11 +129,22 @@ minioClient = new MinioClient()
 builder.Services.AddSingleton<IMinioClient>(minioClient);
 builder.Services.AddScoped<MinioService>();
 
+// Ruta a la carpeta donde están ffmpeg.exe y ffprobe.exe
+var ffmpegPath = Path.Combine(builder.Environment.ContentRootPath, "ffmpeg", "bin");
+FFmpeg.SetExecutablesPath(ffmpegPath);
+
+builder.Services.Configure<FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 1073741824; // 1 GB
+});
+
 // Configurar Kestrel para escuchar en el puerto 5020
 builder.WebHost.ConfigureKestrel(options =>
 {
-    options.ListenAnyIP(5020); // puerto libre
+    options.Limits.MaxRequestBodySize = 1073741824; // 1 GB
+    options.ListenAnyIP(5020);
 });
+
 
 // -------------------- CONSTRUIR APP --------------------
 
@@ -150,7 +163,7 @@ if (app.Environment.IsDevelopment())
 */
 
 app.UseCors("AllowAll");
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();

@@ -1,10 +1,12 @@
 ﻿using AutoMapper;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using PlataformaIntegral.API.DTOs;
 using PlataformaIntegral.API.Enums;
 using PlataformaIntegral.API.Models;
 using PlataformaIntegral.API.Services;
+using Xabe.FFmpeg;
 
 public class CrearCursoService : ICrearCursoService
 {
@@ -65,7 +67,10 @@ public class CrearCursoService : ICrearCursoService
         }
         catch
         {
-            await transaction.RollbackAsync();
+            if (transaction.GetDbTransaction().Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw;
         }
     }
@@ -100,46 +105,83 @@ public class CrearCursoService : ICrearCursoService
 
         try
         {
-            // 1) Subir archivo a MinIO → devuelve objectKey
-            string objectKey = null;
+            // 1) Subir video a MinIO
+            string videoKey = await _storage.UploadVideoAsync(dto.Archivo);
 
-            if (dto.Archivo != null)
+            // Guardar temporalmente para procesar con FFmpeg
+            var tempVideoPath = Path.Combine(Path.GetTempPath(), dto.Archivo.FileName);
+            using (var stream = new FileStream(tempVideoPath, FileMode.Create))
             {
-                objectKey = await _storage.UploadVideoAsync(dto.Archivo);
+                await dto.Archivo.CopyToAsync(stream);
             }
 
-            // 2) Crear entidad Recurso
+
+            // 2) Obtener duración y peso
+            var mediaInfo = await FFmpeg.GetMediaInfo(tempVideoPath);
+            var duracion = (int)mediaInfo.Duration.TotalSeconds;
+            var peso = new FileInfo(tempVideoPath).Length;
+
+            // 3) Miniatura
+            string miniaturaKey;
+            if (dto.Miniatura != null) // ojo: usa PascalCase en la propiedad
+            {
+                miniaturaKey = await _storage.UploadMiniaturaAsync(dto.Miniatura);
+            }
+            else
+            {
+                var tempThumbPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.jpg");
+                var conversion = FFmpeg.Conversions.New()
+                    .AddParameter($"-ss {duracion / 2} -i {tempVideoPath} -frames:v 1 {tempThumbPath}");
+                await conversion.Start();
+
+                using var thumbStream = new FileStream(tempThumbPath, FileMode.Open, FileAccess.Read);
+
+                // Aquí construyes el FormFile con ContentType y Headers válidos
+                var formFile = new FormFile(thumbStream, 0, thumbStream.Length, "miniatura", Path.GetFileName(tempThumbPath))
+                {
+                    Headers = new HeaderDictionary(),
+                    ContentType = "image/jpeg"
+                };
+
+                miniaturaKey = await _storage.UploadMiniaturaAsync(formFile);
+            }
+
+            // 4) Crear entidad Recurso
             var recurso = new Recurso
             {
                 Nombre = dto.Nombre,
-                Url = objectKey,        // guardamos la KEY, no una URL completa
+                Url = videoKey,
             };
 
             _context.Recursos.Add(recurso);
             await _context.SaveChangesAsync();
 
-            // 3) Obtener número de orden del video
+            // 5) Crear entidad Video
             var numeroOrden = await _context.Videos
                 .CountAsync(v => v.IdCapitulo == capituloId) + 1;
 
-            // 4) Crear entidad Video
             var video = new Video
             {
                 IdCapitulo = capituloId,
                 IdRecurso = recurso.IdRecurso,
                 NumeroOrden = numeroOrden,
+                MiniaturaUrl = miniaturaKey,
+                DuracionSegundos = duracion,
+                PesoBytes = peso
             };
 
             _context.Videos.Add(video);
             await _context.SaveChangesAsync();
 
             await transaction.CommitAsync();
-
             return recurso.IdRecurso;
         }
         catch
         {
-            await transaction.RollbackAsync();
+            if (transaction.GetDbTransaction().Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw;
         }
     }
@@ -194,7 +236,10 @@ public class CrearCursoService : ICrearCursoService
         }
         catch
         {
-            await transaction.RollbackAsync();
+            if (transaction.GetDbTransaction().Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw;
         }
     }
@@ -231,8 +276,38 @@ public class CrearCursoService : ICrearCursoService
             // 2. ¿Reemplazar archivo?
             if (dto.Archivo != null)
             {
+                // Subir nuevo video
                 var newKey = await _storage.UploadVideoAsync(dto.Archivo);
                 video.Recurso.Url = newKey;
+
+                // Guardar temporalmente para procesar con FFmpeg
+                var tempVideoPath = Path.Combine(Path.GetTempPath(), dto.Archivo.FileName);
+                using (var stream = new FileStream(tempVideoPath, FileMode.Create))
+                {
+                    await dto.Archivo.CopyToAsync(stream);
+                }
+
+                // Obtener duración y peso
+                var mediaInfo = await FFmpeg.GetMediaInfo(tempVideoPath);
+                video.DuracionSegundos = (decimal)mediaInfo.Duration.TotalSeconds;
+                video.PesoBytes = new FileInfo(tempVideoPath).Length;
+
+                // Miniatura
+                if (dto.Miniatura != null)
+                {
+                    video.MiniaturaUrl = await _storage.UploadImageAsync(dto.Miniatura);
+                }
+                else
+                {
+                    var tempThumbPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.jpg");
+                    var conversion = FFmpeg.Conversions.New()
+                        .AddParameter($"-ss {video.DuracionSegundos / 2} -i {tempVideoPath} -frames:v 1 {tempThumbPath}");
+                    await conversion.Start();
+
+                    using var thumbStream = new FileStream(tempThumbPath, FileMode.Open);
+                    var formFile = new FormFile(thumbStream, 0, thumbStream.Length, null, Path.GetFileName(tempThumbPath));
+                    video.MiniaturaUrl = await _storage.UploadImageAsync(formFile);
+                }
             }
 
             await _context.SaveChangesAsync();
@@ -240,10 +315,14 @@ public class CrearCursoService : ICrearCursoService
         }
         catch
         {
-            await transaction.RollbackAsync();
+            if (transaction.GetDbTransaction().Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw;
         }
     }
+
 
     public async Task EliminarVideoAsync(int videoId)
     {
@@ -258,24 +337,31 @@ public class CrearCursoService : ICrearCursoService
             if (video == null)
                 throw new Exception($"Video {videoId} no encontrado.");
 
-            var key = video.Recurso.Url;
+            var keyVideo = video.Recurso.Url;
+            var keyMiniatura = video.MiniaturaUrl;
 
             _context.Recursos.Remove(video.Recurso);
             _context.Videos.Remove(video);
 
             await _context.SaveChangesAsync();
 
-            // si quieres eliminarlo físicamente del bucket
-            // await _storage.DeleteFileAsync(key);
+            // Eliminar físicamente del bucket
+            await _storage.DeleteVideoAsync(keyVideo);
+            if (!string.IsNullOrEmpty(keyMiniatura))
+                 await _storage.DeleteMiniaturaAsync(keyMiniatura);
 
             await transaction.CommitAsync();
         }
         catch
         {
-            await transaction.RollbackAsync();
+            if (transaction.GetDbTransaction().Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw;
         }
     }
+
 
     public async Task EliminarCapituloAsync(int capituloId)
     {
@@ -299,12 +385,14 @@ public class CrearCursoService : ICrearCursoService
             foreach (var video in capitulo.Videos)
             {
                 var key = video.Recurso.Url;
+                var miniaturaKey = video.MiniaturaUrl;
 
                 _context.Recursos.Remove(video.Recurso);
                 _context.Videos.Remove(video);
 
-                // ← si quieres borrar físicamente del bucket
-                // await _storage.DeleteFileAsync(key);
+                await _storage.DeleteVideoAsync(key);
+                if (!string.IsNullOrEmpty(miniaturaKey))
+                    await _storage.DeleteMiniaturaAsync(miniaturaKey);
             }
 
             // =====================================
@@ -332,7 +420,10 @@ public class CrearCursoService : ICrearCursoService
         }
         catch
         {
-            await transaction.RollbackAsync();
+            if (transaction.GetDbTransaction().Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw;
         }
     }
@@ -365,7 +456,7 @@ public class CrearCursoService : ICrearCursoService
                 try
                 {
                     // borrar físicamente del bucket
-                    // await _storage.DeleteFileAsync(curso.CursoPregrabado.UrlPortada);
+                     await _storage.DeleteImageAsync(curso.CursoPregrabado.UrlPortada);
                 }
                 catch
                 {
@@ -382,14 +473,17 @@ public class CrearCursoService : ICrearCursoService
             {
                 foreach (var video in capitulo.Videos)
                 {
-                    var key = video.Recurso.Url;
-
-                    // borrar archivo real del bucket
-                    // await _storage.DeleteFileAsync(key);
+                    var keyVideo = video.Recurso.Url;
+                    var keyMiniatura = video.MiniaturaUrl;
 
                     _context.Recursos.Remove(video.Recurso);
                     _context.Videos.Remove(video);
+
+                    await _storage.DeleteVideoAsync(keyVideo);
+                    if (!string.IsNullOrEmpty(keyMiniatura))
+                         await _storage.DeleteMiniaturaAsync(keyMiniatura);
                 }
+
 
                 _context.Capitulos.Remove(capitulo);
             }
@@ -419,7 +513,10 @@ public class CrearCursoService : ICrearCursoService
         }
         catch
         {
-            await transaction.RollbackAsync();
+            if (transaction.GetDbTransaction().Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
             throw;
         }
     }

@@ -95,15 +95,32 @@ namespace PlataformaIntegral.API.Services.Auth
             // 4️ Crear rol específico
             switch (usuario.IdTipoUsuario)
             {
-                case 1:
-                    _context.Estudiantes.Add(new Estudiante { IdUsuario = usuario.IdUsuario });
+                case 1: // Estudiante
+                    _context.Estudiantes.Add(new Estudiante
+                    {
+                        IdUsuario = usuario.IdUsuario,
+                        Educacion = dto.Educacion,
+                        Puntos = 0
+                    });
                     break;
-                case 2:
-                    _context.Profesores.Add(new Profesor { IdUsuario = usuario.IdUsuario });
+
+                case 2: // Profesor
+                    _context.Profesores.Add(new Profesor
+                    {
+                        IdUsuario = usuario.IdUsuario,
+                        Disponibilidad = dto.Disponibilidad,
+                        EstadoVerificacion = false
+                    });
                     break;
-                case 3:
-                    _context.Administradores.Add(new Administrador { IdUsuario = usuario.IdUsuario });
+
+                case 3: // Administrador
+                    _context.Administradores.Add(new Administrador
+                    {
+                        IdUsuario = usuario.IdUsuario,
+                        Rol = dto.Rol ?? "Administrador"
+                    });
                     break;
+
                 default:
                     _context.Estudiantes.Add(new Estudiante { IdUsuario = usuario.IdUsuario });
                     break;

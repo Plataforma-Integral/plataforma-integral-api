@@ -19,6 +19,6 @@ namespace PlataformaIntegral.API.DTOs
 
         [StringLength(50)]
         [Unicode(false)]
-        public string? Tipo { get; set; } = null; //Aun no le vi utilidad a la propiedad
+        public string? Tipo { get; set; } = null;
     }
 }

@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Numerics;
 using Microsoft.EntityFrameworkCore;
+using Minio.DataModel.ILM;
 
 namespace PlataformaIntegral.API.Models;
 
@@ -29,10 +31,16 @@ public partial class Video
     [Unicode(false)]
     public string? Tipo { get; set; }
 
-    [Column("miniatura")]
+    [Column("duracion_segundos")]
+    public decimal DuracionSegundos { get; set; }
+
+    [Column("peso_bytes")]
+    public long PesoBytes { get; set; }
+
+    [Column("miniatura_url")]
     [StringLength(200)]
     [Unicode(false)]
-    public string? Miniatura { get; set; }
+    public string? MiniaturaUrl { get; set; }
 
     public virtual ICollection<Documento> Documentos { get; set; } = new List<Documento>();
 

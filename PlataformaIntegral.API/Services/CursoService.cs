@@ -227,7 +227,6 @@ namespace PlataformaIntegral.API.Services
 
         public async Task<CursoPaginaDto?> ObtenerPaginaCursoAsync(int cursoId, int? usuarioId = null, string? rol = null)
         {
-            // 1) Traer curso con capitulos + recursos (proyección parcial)
             var cursoQuery = await _context.Cursos
                 .Where(c => c.IdProducto == cursoId)
                 .Select(c => new
@@ -240,12 +239,10 @@ namespace PlataformaIntegral.API.Services
                     PrecioPuntos = c.CursoPregrabado != null ? c.CursoPregrabado.PrecioPuntos : 0,
                     Categorias = c.Categorias.Select(cc => cc.Nombre).ToList(),
                     FechaCreacion = c.Producto.FechaCreacion,
-                    // Profesores desde la relación muchos-a-muchos profesor_curso
                     Profesores = c.ProfesorCursos.Select(pc => new {
                         IdProfesor = pc.Profesor.IdUsuario,
                         Nombre = pc.Profesor.Usuario.Nombre,
-                        Apellido = pc.Profesor.Usuario.Apellido,
-                        //FotoPerfil = pc.Profesor.Usuario.FotoPerfilUrl
+                        Apellido = pc.Profesor.Usuario.Apellido
                     }).ToList(),
 
                     Capitulos = c.CursoPregrabado.Capitulos.OrderBy(cp => cp.NumeroOrden).Select(cp => new
@@ -253,18 +250,23 @@ namespace PlataformaIntegral.API.Services
                         cp.IdCapitulo,
                         cp.Nombre,
                         cp.NumeroOrden,
-                        Videos = cp.Videos.OrderBy(r => r.NumeroOrden)
-                            .Select(r => new { r.IdRecurso, r.Recurso.Nombre, r.NumeroOrden, Key = r.Recurso.Url }).ToList(),
-                        Cuestionarios = cp.Cuestionarios.OrderBy(r => r.NumeroOrden)
-                            .Select(r => new { r.IdRecurso, r.Recurso.Nombre, r.NumeroOrden }).ToList()
+                        Videos = cp.Videos.OrderBy(v => v.NumeroOrden)
+                            .Select(v => new {
+                                v.IdRecurso,
+                                v.Recurso.Nombre,
+                                v.NumeroOrden,
+                                v.MiniaturaUrl,
+                                v.DuracionSegundos,
+                                v.PesoBytes
+                            }).ToList(),
+                        Cuestionarios = cp.Cuestionarios.OrderBy(q => q.NumeroOrden)
+                            .Select(q => new { q.IdRecurso, q.Recurso.Nombre, q.NumeroOrden }).ToList()
                     }).ToList(),
 
-                    // Reseñas del profesor(es) - calculamos promedio sobre todas las reseñas de los profesores relacionados
                     ProfesoresResenas = c.ProfesorCursos
                         .SelectMany(pc => pc.Profesor.ReseñasProfesor)
                         .Select(r => new { r.Opinion })
                         .ToList(),
-                    // Obtener reseña personal del usuario (si existe)
                     ReseñaUsuario =
                         usuarioId.HasValue
                         ? c.ReseñaCursos
@@ -272,18 +274,16 @@ namespace PlataformaIntegral.API.Services
                             .Select(r => (bool?)r.Opinion)
                             .FirstOrDefault()
                         : null,
-                    // Obtener calificación general del curso (0..100)
                     CalificacionGeneral =
                         c.ReseñaCursos.Any()
                             ? (double?)c.ReseñaCursos.Count(r => r.Opinion) * 100.0 / c.ReseñaCursos.Count()
                             : null,
-
                 })
                 .FirstOrDefaultAsync();
 
             if (cursoQuery == null) return null;
 
-            // 2) Obtener progreso del usuario (si aplica)
+            // Progreso del usuario
             Dictionary<int, string?> progreso = new();
             if (usuarioId.HasValue)
             {
@@ -300,19 +300,10 @@ namespace PlataformaIntegral.API.Services
                 }
             }
 
-            bool comprado = false;
-            if (usuarioId.HasValue)
-            {
-                comprado = await _context.Pagos
-                    .Where(c => c.EstadoPago.Nombre == "Aprobado")
-                    .AnyAsync(c => c.IdUsuario == usuarioId.Value && c.IdProducto == cursoId);
-            }
-            else if(rol == "Administrador")
-            {
-                comprado = true;
-            }
+            bool comprado = usuarioId.HasValue
+                ? await _context.Pagos.AnyAsync(c => c.EstadoPago.Nombre == "Aprobado" && c.IdUsuario == usuarioId.Value && c.IdProducto == cursoId)
+                : rol == "Administrador";
 
-            // 3) Construir DTO final
             var cursoDto = new CursoPaginaDto
             {
                 Id = cursoQuery.ProductoId,
@@ -327,13 +318,10 @@ namespace PlataformaIntegral.API.Services
                 Profesores = cursoQuery.Profesores.Select(p => new ProfesorSimpleDto
                 {
                     Id = p.IdProfesor,
-                    NombreCompleto = p.Nombre,
-                    //FotoPerfilUrl = p.FotoPerfil
+                    NombreCompleto = p.Nombre
                 }).ToList(),
-
                 Calificacion = cursoQuery.CalificacionGeneral,
                 Reseña = cursoQuery.ReseñaUsuario,
-
                 Capitulos = cursoQuery.Capitulos.Select(cp => new CapituloDto
                 {
                     Id = cp.IdCapitulo,
@@ -344,7 +332,10 @@ namespace PlataformaIntegral.API.Services
                         Id = v.IdRecurso,
                         Titulo = v.Nombre,
                         NumeroOrden = v.NumeroOrden,
-                        //Duracion = v.Duracion,
+                        Duracion = TimeSpan.FromSeconds((double)v.DuracionSegundos),
+                        PesoBytes = v.PesoBytes,
+                        MiniaturaUrl = string.IsNullOrEmpty(v.MiniaturaUrl) ? null :
+                            _storage.GetMiniaturaUrlAsync(v.MiniaturaUrl, TimeSpan.FromMinutes(60)).Result,
                         Visto = progreso.ContainsKey(v.IdRecurso) && progreso[v.IdRecurso] == "Visto"
                     }).ToList(),
                     Cuestionarios = cp.Cuestionarios.Select(q => new RecursoCuestionarioDto
@@ -359,14 +350,12 @@ namespace PlataformaIntegral.API.Services
 
             if (!string.IsNullOrEmpty(cursoDto.PortadaUrl))
             {
-                cursoDto.PortadaUrl = await _storage.GetImageUrlAsync(
-                    cursoDto.PortadaUrl,
-                    TimeSpan.FromMinutes(60)
-                );
+                cursoDto.PortadaUrl = await _storage.GetImageUrlAsync(cursoDto.PortadaUrl, TimeSpan.FromMinutes(60));
             }
 
             return cursoDto;
         }
+
         public async Task<List<Uri>> ObtenerUrlsDescargaCursoAsync(int cursoId, int usuarioId, int minutesExpiry, string? rol = null)
         {
             // Validar que es curso pregrabado

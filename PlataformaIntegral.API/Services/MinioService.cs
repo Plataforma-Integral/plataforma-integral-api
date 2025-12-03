@@ -15,35 +15,54 @@ namespace PlataformaIntegral.API.Services
             _minioClient = minioClient;
             _configuration = configuration;
         }
+        private static string GetContentTypeFromExtension(string extension)
+        {
+            return extension.ToLower() switch
+            {
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".gif" => "image/gif",
+                ".mp4" => "video/mp4",
+                ".mov" => "video/quicktime",
+                ".avi" => "video/x-msvideo",
+                _ => "application/octet-stream"
+            };
+        }
+
 
         // ================================
         //  MÉTODO PRINCIPAL: SUBIR ARCHIVO
         // ================================
         public async Task<string> UploadFileAsync(IFormFile file, string bucketName)
         {
-            if (file == null) throw new ArgumentNullException(nameof(file));
+            if (file == null)
+                throw new ArgumentNullException(nameof(file));
 
-            // Crear nombre único
+            // Crear nombre único para el objeto
             var extension = Path.GetExtension(file.FileName);
             var objectKey = $"{Guid.NewGuid()}{extension}";
 
             using var stream = file.OpenReadStream();
 
-            // Asegurar bucket
+            // Asegurar que el bucket exista
             await EnsureBucketExistsAsync(bucketName);
+
+            // Fallback robusto para ContentType
+            var contentType = string.IsNullOrWhiteSpace(file.ContentType)
+                ? GetContentTypeFromExtension(extension)   // intenta deducirlo por extensión
+                : file.ContentType;
 
             var args = new PutObjectArgs()
                 .WithBucket(bucketName)
                 .WithObject(objectKey)
                 .WithStreamData(stream)
                 .WithObjectSize(file.Length)
-                .WithContentType(file.ContentType ?? "application/octet-stream");
+                .WithContentType(contentType);
 
             await _minioClient.PutObjectAsync(args);
 
-            return objectKey; // LO QUE GUARDAS EN BD
+            return objectKey; // lo que guardas en BD
         }
-
         // =====================================
         // OPCIONAL: subir archivo desde Stream
         // =====================================
@@ -129,6 +148,26 @@ namespace PlataformaIntegral.API.Services
         public async Task DeleteVideoAsync(string objectKey)
         {
             string bucket = _configuration["Minio:Buckets:Videos"] ?? "videos";
+            await DeleteFileAsync(bucket, objectKey);
+        }
+
+        // ===================================
+        // METODOS ESPECIFICOS PARA MINIATURAS
+        // ===================================
+        public async Task<string> UploadMiniaturaAsync(IFormFile file)
+        {
+            string bucket = _configuration["Minio:Buckets:Miniaturas"] ?? "miniaturas";
+            return await UploadFileAsync(file, bucket);
+        }
+
+        public async Task<string> GetMiniaturaUrlAsync(string objectKey, TimeSpan expiry)
+        {
+            string bucket = _configuration["Minio:Buckets:Miniaturas"] ?? "miniaturas";
+            return await GetFileUrlAsync(bucket, objectKey, expiry);
+        }
+        public async Task DeleteMiniaturaAsync(string objectKey)
+        {
+            string bucket = _configuration["Minio:Buckets:Miniaturas"] ?? "miniaturas";
             await DeleteFileAsync(bucket, objectKey);
         }
 

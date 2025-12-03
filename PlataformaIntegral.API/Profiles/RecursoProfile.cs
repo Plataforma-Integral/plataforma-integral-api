@@ -80,7 +80,7 @@ namespace PlataformaIntegral.API.Profiles
                 .ForMember(dest => dest.Duracion, opt => opt.Ignore())
                 .ForMember(dest => dest.NumeroOrden, opt => opt.MapFrom(src => src.NumeroOrden))
                 .ForMember(dest => dest.Visto, opt => opt.Ignore()) // Se asignará en el servicio según el estudiante autenticado.
-                .ForMember(dest => dest.PresignedUrl, opt => opt.Ignore()); // Se asignará en el servicio si es necesario.
+                .ForMember(dest => dest.MiniaturaUrl, opt => opt.Ignore()); // Se asignará en el servicio si es necesario.
 
 
         }
