@@ -14,16 +14,20 @@ namespace PlataformaIntegral.API.Controllers
         private readonly ILogger<CursosCreacionController> _logger;
         private readonly ICursoService _cursoService;
 
-        public CursosCreacionController(ICrearCursoService crearCursoService, ILogger<CursosCreacionController> logger)
+        public CursosCreacionController(ICrearCursoService crearCursoService,
+                                ICursoService cursoService,
+                                ILogger<CursosCreacionController> logger)
         {
             _crearCursoService = crearCursoService;
+            _cursoService = cursoService;
             _logger = logger;
         }
 
         // -------------------------------------
         // 1. Crear curso pregrabado en borrador
         // -------------------------------------
-        [HttpPost("pregrabado")]
+        [HttpPost("pregrabados")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> CrearCursoPregrabado([FromForm] CursoPregrabadoDto dto)
         {
             if (dto == null)
@@ -43,18 +47,16 @@ namespace PlataformaIntegral.API.Controllers
             }
         }
 
-        // -------------------------------------
-        // 2. Agregar capítulo a un curso
-        // -------------------------------------
-        [HttpPost("{cursoId}/capitulos")]
-        public async Task<IActionResult> AgregarCapitulo([FromRoute] int cursoId, [FromBody] string nombreCapitulo)
+        [HttpPost("pregrabados/{cursoId}/capitulos")]
+        public async Task<IActionResult> AgregarCapitulo([FromRoute] int cursoId, [FromBody] CapituloCreateDto capitulo)
         {
-            if (string.IsNullOrWhiteSpace(nombreCapitulo))
+            if (string.IsNullOrWhiteSpace(capitulo.Nombre))
                 return BadRequest("El nombre del capítulo no puede estar vacío.");
 
             try
             {
-                int capituloId = await _crearCursoService.AgregarCapituloAsync(cursoId, nombreCapitulo);
+                // Usar cursoId de la ruta, no del body (evita redundancia)
+                int capituloId = await _crearCursoService.AgregarCapituloAsync(cursoId, capitulo.Nombre);
                 return Ok(new { CapituloId = capituloId });
             }
             catch (Exception ex)
@@ -68,6 +70,7 @@ namespace PlataformaIntegral.API.Controllers
         // 3. Subir video a un capítulo
         // -------------------------------------
         [HttpPost("capitulos/{capituloId}/videos")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> SubirVideo([FromRoute] int capituloId, [FromForm] VideoDto dto)
         {
             if (dto?.Archivo == null)
@@ -88,7 +91,7 @@ namespace PlataformaIntegral.API.Controllers
         // -------------------------------------
         // 4. Publicar curso
         // -------------------------------------
-        [HttpPut("{cursoId}/publicar")]
+        [HttpPut("pregrabados/{cursoId}/publicar")]
         public async Task<IActionResult> PublicarCurso([FromRoute] int cursoId)
         {
             try
@@ -106,7 +109,8 @@ namespace PlataformaIntegral.API.Controllers
         // -------------------------------------
         // 5. Modificar curso pregrabado
         // -------------------------------------
-        [HttpPut("{cursoId}")]
+        [HttpPut("pregrabados/{cursoId}")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> ModificarCursoPregrabado([FromRoute] int cursoId, [FromForm] CursoPregrabadoDto dto)
         {
             if (dto == null)
@@ -149,6 +153,7 @@ namespace PlataformaIntegral.API.Controllers
         // 7. Modificar video
         // -------------------------------------
         [HttpPut("videos/{videoId}")]
+        [Consumes("multipart/form-data")]
         public async Task<IActionResult> ModificarVideo([FromRoute] int videoId, [FromForm] VideoDto dto)
         {
             if (dto == null)
@@ -205,7 +210,7 @@ namespace PlataformaIntegral.API.Controllers
         // -------------------------------------
         // 10. Eliminar curso
         // -------------------------------------
-        [HttpDelete("{cursoId}")]
+        [HttpDelete("pregrabados/{cursoId}")]
         public async Task<IActionResult> EliminarCurso([FromRoute] int cursoId)
         {
             try

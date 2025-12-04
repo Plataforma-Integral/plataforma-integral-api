@@ -4,10 +4,10 @@ namespace PlataformaIntegral.API.DTOs.Auth
 {
     public class RegisterDto
     {
-        [Required, StringLength(80)]
+        [StringLength(80)]
         public string Nombre { get; set; } = null!;
 
-        [Required, StringLength(80)]
+        [StringLength(80)]
         public string Apellido { get; set; } = null!;
 
         [Required, EmailAddress]

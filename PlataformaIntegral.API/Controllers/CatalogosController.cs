@@ -39,7 +39,7 @@ namespace PlataformaIntegral.API.Controllers
             return Ok(await _catalogoService.ObtenerModalidadesSincronicoAsync());
         }
 
-        [HttpGet("tipos-rol")]
+        [HttpGet("roles")]
         public async Task<ActionResult<IEnumerable<CatalogoDto>>> GetTiposRol()
         {
             return Ok(await _catalogoService.ObtenerTiposRolAsync());
@@ -63,7 +63,7 @@ namespace PlataformaIntegral.API.Controllers
             return Ok(await _catalogoService.ObtenerMetodosPagoAsync());
         }
 
-        [HttpGet("tipos-moneda")]
+        [HttpGet("monedas")]
         public async Task<ActionResult<IEnumerable<CatalogoDto>>> GetTiposMoneda()
         {
             return Ok(await _catalogoService.ObtenerTiposMonedaAsync());

@@ -9,7 +9,7 @@
         public string Rol { get; set; } = null!;
         public string? Nombre { get; set; }
         public string? Apellido { get; set; }
-        public string? ImagenUrl { get; set; }   // ✅ Nueva propiedad
+        public string? ImagenUrl { get; set; }   // Nueva propiedad
         public bool Success { get; set; } = true;
         public string? Message { get; set; }
     }

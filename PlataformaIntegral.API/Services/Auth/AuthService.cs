@@ -20,11 +20,12 @@ namespace PlataformaIntegral.API.Services.Auth
         private readonly IMapper _mapper;
         private readonly MinioService _minioService;
 
-        public AuthService(PlataformaIntegralContext context, IConfiguration config, IMapper mapper)
+        public AuthService(PlataformaIntegralContext context, IConfiguration config, IMapper mapper, MinioService minioService)
         {
             _context = context;
             _config = config;
             _mapper = mapper;
+            _minioService = minioService;
         }
 
         public async Task<AuthResponseDto?> LoginAsync(LoginDto dto)

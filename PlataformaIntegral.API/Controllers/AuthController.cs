@@ -33,7 +33,10 @@ namespace PlataformaIntegral.API.Controllers
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterDto dto)
         {
-            if(dto.Contrasena == null || dto.Email == null)
+            if (!ModelState.IsValid)
+                return BadRequest(ModelState);
+
+            if (dto.Contrasena == null || dto.Email == null)
                 return BadRequest(new AuthResponseDto { Success = false, Message = "Email y Contraseña son obligatorios" });
 
             var result = await _authService.RegisterAsync(dto);

@@ -157,8 +157,8 @@ var app = builder.Build();
 try
 {
     // Swagger siempre activo
-    //app.UseSwagger();
-    //app.UseSwaggerUI();
+    app.UseSwagger();
+    app.UseSwaggerUI();
 
     app.UseCors("AllowAll");
     app.UseHttpsRedirection();

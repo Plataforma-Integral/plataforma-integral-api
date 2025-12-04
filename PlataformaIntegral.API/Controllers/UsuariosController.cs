@@ -44,6 +44,7 @@ public class UsuariosController : ControllerBase
     // =========================================
     [HttpPost]
     [Authorize(Roles = "Administrador")] // Solo admin puede crear usuarios
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> CreateUsuario([FromForm] UsuarioCreateDto dto)
     {
         var usuario = await _service.CreateAsync(dto);
@@ -54,17 +55,20 @@ public class UsuariosController : ControllerBase
     // PUT: api/usuarios/{id}
     // =========================================
     [HttpPut("{id}")]
+    [Consumes("multipart/form-data")]
     public async Task<IActionResult> UpdateUsuario(int id, [FromForm] UsuarioUpdateDto dto)
     {
         var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
         if (id != userId && userRole != "Administrador")
-            return Forbid(); // No puedes modificar otro usuario
+            return Forbid();
 
         var success = await _service.UpdateAsync(id, dto);
 
-        return success ? Ok() : NotFound();
+        return success
+            ? Ok(new { success = true, message = "Usuario actualizado correctamente." })
+            : NotFound(new { success = false, message = "Usuario no encontrado." });
     }
 
     // =========================================

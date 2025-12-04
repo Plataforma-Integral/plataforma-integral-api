@@ -93,8 +93,8 @@ namespace PlataformaIntegral.API.Controllers
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (usuarioId != userId & userRole != "Administrador")
-                return Forbid(); // No puedes modificar otro usuario
+            if (usuarioId != userId && userRole != "Administrador")
+                return Forbid();
 
             var curso = await _cursoService.ObtenerPaginaCursoAsync(cursoId, usuarioId, userRole);
 
@@ -116,8 +116,8 @@ namespace PlataformaIntegral.API.Controllers
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (usuarioId != userId & userRole != "Administrador")
-                return Forbid(); // No puedes modificar otro usuario
+            if (usuarioId != userId && userRole != "Administrador")
+                return Forbid();
 
             var urls = await _cursoService.ObtenerUrlsDescargaCursoAsync(cursoId, usuarioId, minutosExpiracion, userRole);
             return Ok(urls.Select(u => u.ToString()));
@@ -127,13 +127,16 @@ namespace PlataformaIntegral.API.Controllers
         // 8. OBTENER DETALLES DEL VIDEO
         // --------------------------------------
         [HttpGet("videos/{videoId}/stream")]
-        public async Task<IActionResult> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutosExpiracion = 60)
+        public async Task<IActionResult> ObtenerVideoDetalleAsync(
+            [FromRoute] int videoId,
+            [FromQuery] int usuarioId,
+            [FromQuery] int minutosExpiracion = 60)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            if (usuarioId != userId & userRole != "Administrador")
-                return Forbid(); // No puedes modificar otro usuario
+            if (usuarioId != userId && userRole != "Administrador")
+                return Forbid();
 
             var video = await _cursoService.ObtenerVideoDetalleAsync(videoId, usuarioId, minutosExpiracion, userRole);
             return Ok(video);

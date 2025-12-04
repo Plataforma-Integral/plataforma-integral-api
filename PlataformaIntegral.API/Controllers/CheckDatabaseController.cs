@@ -4,34 +4,36 @@ using PlataformaIntegral.API.Models;
 
 namespace PlataformaIntegral.API.Controllers
 {
+    [ApiController]
+    [Route("api/v1/[controller]")]
     public class CheckDatabaseController : ControllerBase
     {
         private readonly PlataformaIntegralContext _context;
 
-        // 🔹 Inyección del DbContext (ya configurado en Program.cs)
         public CheckDatabaseController(PlataformaIntegralContext context)
         {
             _context = context;
         }
 
-        [HttpGet("check-db")]
+        [HttpGet("check")]
         public IActionResult CheckDatabase()
         {
             bool canConnect = _context.Database.CanConnect();
             return Ok(new { connected = canConnect });
         }
-        [HttpGet("test-db")]
-        public IActionResult TestDb([FromServices] PlataformaIntegralContext context)
+
+        [HttpGet("test")]
+        public IActionResult TestDb()
         {
             try
             {
-                context.Database.OpenConnection();
-                context.Database.CloseConnection();
-                return Ok("Conexión a la BD OK");
+                _context.Database.OpenConnection();
+                _context.Database.CloseConnection();
+                return Ok(new { message = "Conexión a la BD OK" });
             }
             catch (Exception ex)
             {
-                return BadRequest(ex.Message);
+                return BadRequest(new { error = ex.Message });
             }
         }
     }
