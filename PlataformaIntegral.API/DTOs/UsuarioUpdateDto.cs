@@ -3,12 +3,14 @@ using Microsoft.AspNetCore.Http;
 
 namespace PlataformaIntegral.API.DTOs
 {
-    public class UsuarioCreateDto
+    public class UsuarioUpdateDto
     {
-        [Required, StringLength(80)]
+        [Required(ErrorMessage = "El nombre es obligatorio")]
+        [StringLength(80, ErrorMessage = "El nombre no puede tener más de 80 caracteres")]
         public string Nombre { get; set; } = null!;
 
-        [Required, StringLength(80)]
+        [Required(ErrorMessage = "El apellido es obligatorio")]
+        [StringLength(80)]
         public string Apellido { get; set; } = null!;
 
         [StringLength(50)]
@@ -37,10 +39,10 @@ namespace PlataformaIntegral.API.DTOs
         [StringLength(100)]
         public string? NivelEducativo { get; set; }
 
-        // Imagen de perfil opcional
+        // Imagen de perfil (se sube a MinIO en el Update)
         public IFormFile? ImagenPerfil { get; set; }
 
-        // Opcionales
+        // Opcionales: credenciales y configuración de privacidad
         public CredencialCreateDto? Credencial { get; set; }
         public ConfigPrivacidadCreateDto? Config { get; set; }
     }

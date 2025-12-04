@@ -5,10 +5,20 @@
         public int Id { get; set; }
         public string Titulo { get; set; } = string.Empty;
         public string? Descripcion { get; set; }
-        public TimeSpan? Duracion { get; set; }
-        public string? PresignedUrl { get; set; }
+
+        // Duración como TimeSpan
+        public TimeSpan Duracion { get; set; }
+
+        // Propiedad calculada para mostrar en formato hh:mm:ss
+        public string DuracionTexto => Duracion.ToString(@"hh\:mm\:ss");
+
+        // URL firmada para streaming desde MinIO
+        public string? VideoUrl { get; set; }
+
+        // Miniatura para mostrar en la página
         public string? MiniaturaUrl { get; set; }
-        public string? MimeType { get; set; }
-        public long? TamañoBytes { get; set; }
+
+        // Metadatos técnicos
+        public long PesoBytes { get; set; }
     }
 }

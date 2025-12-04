@@ -6,7 +6,7 @@ namespace PlataformaIntegral.API.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Administrador")]
+    [Authorize(Roles = "Administrador")] // Solo administradores pueden manipular archivos
     public class FilesController : ControllerBase
     {
         private readonly MinioService _minioService;
@@ -20,26 +20,31 @@ namespace PlataformaIntegral.API.Controllers
             _logger = logger;
         }
 
+        // =========================================
         // SUBIR ARCHIVO A UN BUCKET
+        // =========================================
         [HttpPost("upload")]
-        public async Task<IActionResult> UploadFile(IFormFile file, string bucket, int MinutesExpiry)
+        [Consumes("multipart/form-data")]
+        public async Task<IActionResult> UploadFile([FromForm] IFormFile file, [FromQuery] string bucket, [FromQuery] int minutesExpiry = 30)
         {
             if (file == null || file.Length == 0)
-                return BadRequest("Debe seleccionar un archivo.");
+                return BadRequest("Debe seleccionar un archivo válido.");
+
+            if (string.IsNullOrWhiteSpace(bucket))
+                return BadRequest("Debe especificar un bucket.");
 
             try
             {
-                using var stream = file.OpenReadStream();
-                await _minioService.UploadFileAsync(stream, file.FileName, bucket);
+                var objectKey = await _minioService.UploadFileAsync(file, bucket);
 
-                // Devuelve la URL temporal para comprobarlo
-                TimeSpan expiry = TimeSpan.FromMinutes(MinutesExpiry);
-                var url = await _minioService.GetFileUrlAsync(bucket, file.FileName, expiry);
-                return Ok(new
+                var expiry = TimeSpan.FromMinutes(minutesExpiry > 0 ? minutesExpiry : 30);
+                var url = await _minioService.GetFileUrlAsync(bucket, objectKey, expiry);
+
+                return CreatedAtAction(nameof(GetFileUrl), new { bucket, fileName = objectKey, minutesExpiry }, new
                 {
                     message = "Archivo subido correctamente",
-                    fileName = file.FileName,
                     bucket,
+                    objectKey,
                     url
                 });
             }
@@ -50,10 +55,15 @@ namespace PlataformaIntegral.API.Controllers
             }
         }
 
+        // =========================================
         // DESCARGAR ARCHIVO (STREAM)
+        // =========================================
         [HttpGet("download")]
-        public async Task<IActionResult> DownloadFile(string bucket, string fileName)
+        public async Task<IActionResult> DownloadFile([FromQuery] string bucket, [FromQuery] string fileName)
         {
+            if (string.IsNullOrWhiteSpace(bucket) || string.IsNullOrWhiteSpace(fileName))
+                return BadRequest("Debe especificar bucket y nombre de archivo.");
+
             try
             {
                 var stream = await _minioService.GetFileAsync(bucket, fileName);
@@ -62,17 +72,22 @@ namespace PlataformaIntegral.API.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error descargando archivo desde MinIO.");
-                return NotFound("No se pudo encontrar o descargar el archivo.");
+                return NotFound($"No se pudo encontrar o descargar el archivo {fileName} en el bucket {bucket}.");
             }
         }
 
+        // =========================================
         // OBTENER URL TEMPORAL
+        // =========================================
         [HttpGet("url")]
-        public async Task<IActionResult> GetFileUrl(string bucket, string fileName, int minutesExpiry)
+        public async Task<IActionResult> GetFileUrl([FromQuery] string bucket, [FromQuery] string fileName, [FromQuery] int minutesExpiry = 30)
         {
+            if (string.IsNullOrWhiteSpace(bucket) || string.IsNullOrWhiteSpace(fileName))
+                return BadRequest("Debe especificar bucket y nombre de archivo.");
+
             try
             {
-                TimeSpan expiry = TimeSpan.FromMinutes(minutesExpiry);
+                var expiry = TimeSpan.FromMinutes(minutesExpiry > 0 ? minutesExpiry : 30);
                 var url = await _minioService.GetFileUrlAsync(bucket, fileName, expiry);
                 return Ok(new { bucket, fileName, url });
             }
@@ -80,6 +95,27 @@ namespace PlataformaIntegral.API.Controllers
             {
                 _logger.LogError(ex, "Error generando URL firmada de MinIO.");
                 return StatusCode(500, "No se pudo generar la URL del archivo.");
+            }
+        }
+
+        // =========================================
+        // ELIMINAR ARCHIVO
+        // =========================================
+        [HttpDelete("delete")]
+        public async Task<IActionResult> DeleteFile([FromQuery] string bucket, [FromQuery] string fileName)
+        {
+            if (string.IsNullOrWhiteSpace(bucket) || string.IsNullOrWhiteSpace(fileName))
+                return BadRequest("Debe especificar bucket y nombre de archivo.");
+
+            try
+            {
+                await _minioService.DeleteFileAsync(bucket, fileName);
+                return NoContent();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error eliminando archivo en MinIO.");
+                return NotFound($"No se pudo eliminar el archivo {fileName} en el bucket {bucket}.");
             }
         }
     }

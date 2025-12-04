@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Minio;
+using PlataformaIntegral.API.Helpers;
 using PlataformaIntegral.API.Models;
 using PlataformaIntegral.API.Services;
 using PlataformaIntegral.API.Services.Auth;
@@ -10,173 +11,177 @@ using System.Diagnostics;
 using System.Text;
 using Xabe.FFmpeg;
 
-// -------------------- CONFIGURACIÓN INICIAL --------------------
-
 var builder = WebApplication.CreateBuilder(args);
 
-// -------------------- SERVICIOS BÁSICOS --------------------
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-
-// Swagger con autenticación JWT
-builder.Services.AddSwaggerGen(c =>
+try
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "PlataformaIntegral API", Version = "v1" });
-
-    c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
-    {
-        Name = "Authorization",
-        Type = SecuritySchemeType.ApiKey,
-        Scheme = "Bearer",
-        BearerFormat = "JWT",
-        In = ParameterLocation.Header,
-        Description = "Ingresa: Bearer <tu-token>"
-    });
-
-    c.AddSecurityRequirement(new OpenApiSecurityRequirement
-    {
+    // -------------------- SERVICIOS BÁSICOS --------------------
+    builder.Services.AddControllers()
+        .AddJsonOptions(options =>
         {
-            new OpenApiSecurityScheme
+            options.JsonSerializerOptions.Converters.Add(new DateOnlyJsonConverter());
+            options.JsonSerializerOptions.Converters.Add(new NullableDateOnlyJsonConverter());
+        });
+
+    builder.Services.AddEndpointsApiExplorer();
+
+    // Swagger con autenticación JWT
+    builder.Services.AddSwaggerGen(c =>
+    {
+        c.SwaggerDoc("v1", new OpenApiInfo { Title = "PlataformaIntegral API", Version = "v1" });
+
+        c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+        {
+            Name = "Authorization",
+            Type = SecuritySchemeType.ApiKey,
+            Scheme = "Bearer",
+            BearerFormat = "JWT",
+            In = ParameterLocation.Header,
+            Description = "Ingresa: Bearer <tu-token>"
+        });
+
+        c.AddSecurityRequirement(new OpenApiSecurityRequirement
+        {
             {
-                Reference = new OpenApiReference
+                new OpenApiSecurityScheme
                 {
-                    Type = ReferenceType.SecurityScheme,
-                    Id = "Bearer"
-                }
-            },
-            Array.Empty<string>()
-        }
+                    Reference = new OpenApiReference
+                    {
+                        Type = ReferenceType.SecurityScheme,
+                        Id = "Bearer"
+                    }
+                },
+                Array.Empty<string>()
+            }
+        });
     });
-});
 
-// AutoMapper y DbContext
-builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
-builder.Services.AddDbContext<PlataformaIntegralContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("PlataformaIntegralDB")));
+    // AutoMapper y DbContext
+    builder.Services.AddAutoMapper(AppDomain.CurrentDomain.GetAssemblies());
+    builder.Services.AddDbContext<PlataformaIntegralContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("PlataformaIntegralDB")));
 
-// Servicios personalizados
-builder.Services.AddScoped<IAuthService, AuthService>();
-builder.Services.AddScoped<ICrearCursoService, CrearCursoService>();
-builder.Services.AddScoped<IUsuarioService, UsuarioService>();
-builder.Services.AddScoped<MinioService>();
-builder.Services.AddScoped<ICursoService, CursoService>();
+    // -------------------- SERVICIOS PERSONALIZADOS --------------------
+    builder.Services.AddScoped<IAuthService, AuthService>();
+    builder.Services.AddScoped<ICrearCursoService, CrearCursoService>();
+    builder.Services.AddScoped<IUsuarioService, UsuarioService>();
+    builder.Services.AddScoped<ICursoService, CursoService>();
+    builder.Services.AddScoped<ICatalogoService, CatalogoService>();
+    builder.Services.AddScoped<MinioService>();
 
-// -------------------- JWT --------------------
+    // -------------------- JWT --------------------
+    var jwtKey = builder.Configuration["Jwt:Key"] ?? "quALEgRangrefULPAlMINGentIcHINFe";
+    var key = Encoding.UTF8.GetBytes(jwtKey);
 
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "quALEgRangrefULPAlMINGentIcHINFe";
-var key = Encoding.UTF8.GetBytes(jwtKey);
-
-builder.Services.AddAuthentication(options =>
-{
-    options.DefaultAuthenticateScheme = "Bearer";
-    options.DefaultChallengeScheme = "Bearer";
-})
-.AddJwtBearer("Bearer", options =>
-{
-    options.TokenValidationParameters = new TokenValidationParameters
+    builder.Services.AddAuthentication(options =>
     {
-        ValidateIssuer = false,
-        ValidateAudience = false,
-        ValidateLifetime = true,
-        ValidateIssuerSigningKey = true,
-        IssuerSigningKey = new SymmetricSecurityKey(key)
-    };
-});
-
-// -------------------- CORS --------------------
-
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy("AllowAll", policy =>
+        options.DefaultAuthenticateScheme = "Bearer";
+        options.DefaultChallengeScheme = "Bearer";
+    })
+    .AddJwtBearer("Bearer", options =>
     {
-        policy
-            .AllowAnyOrigin()
-            .AllowAnyMethod()
-            .AllowAnyHeader();
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer = false,
+            ValidateAudience = false,
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key)
+        };
     });
-});
 
-// -------------------- CONFIGURAR MINIO --------------------
+    // -------------------- CORS --------------------
+    builder.Services.AddCors(options =>
+    {
+        options.AddPolicy("AllowAll", policy =>
+        {
+            policy.AllowAnyOrigin()
+                  .AllowAnyMethod()
+                  .AllowAnyHeader();
+        });
+    });
 
-string minioNetworkEndpoint = "minio:9000"; // red Docker
-string minioLocalEndpoint = builder.Configuration["Minio:Endpoint"] ?? "localhost:9000"; // local
-string minioAccessKey = builder.Configuration["Minio:AccessKey"] ?? "AdminPI";
-string minioSecretKey = builder.Configuration["Minio:SecretKey"] ?? "CREDENCIAL_ELIMINADA";
-
-IMinioClient? minioClient = null;
-
-async Task<bool> TestMinioConnectionAsync(IMinioClient client)
-{
+    // -------------------- CONFIGURAR MINIO --------------------
     try
     {
-        await client.ListBucketsAsync();
-        return true;
+        string minioLocalEndpoint = builder.Configuration["Minio:Endpoint"] ?? "localhost:9000";
+        string minioAccessKey = builder.Configuration["Minio:AccessKey"] ?? "AdminPI";
+        string minioSecretKey = builder.Configuration["Minio:SecretKey"] ?? "CREDENCIAL_ELIMINADA";
+
+        var minioClient = new MinioClient()
+            .WithEndpoint(minioLocalEndpoint)
+            .WithCredentials(minioAccessKey, minioSecretKey)
+            .Build();
+
+        builder.Services.AddSingleton<IMinioClient>(minioClient);
+        Debug.WriteLine(" MinioClient configurado correctamente");
     }
     catch (Exception ex)
     {
-        return false;
+        Debug.WriteLine(" Error configurando MinioClient: " + ex.Message);
     }
-}
 
-/* Probar conexión a MinIO en red Docker primero, si falla probar localhost*/
-minioClient = new MinioClient()
-        .WithEndpoint(minioLocalEndpoint) //Cambiar despues por minioNetworkEndpoint
-        .WithCredentials(minioAccessKey, minioSecretKey)
-        .Build();
+    // -------------------- CONFIGURAR FFMPEG --------------------
+    try
+    {
+        var ffmpegPath = Path.Combine(builder.Environment.ContentRootPath, "ffmpeg", "bin");
+        FFmpeg.SetExecutablesPath(ffmpegPath);
+        Debug.WriteLine(" FFmpeg configurado correctamente en: " + ffmpegPath);
+    }
+    catch (Exception ex)
+    {
+        Debug.WriteLine(" Error configurando FFmpeg: " + ex.Message);
+    }
 
-// Registrar siempre
-builder.Services.AddSingleton<IMinioClient>(minioClient);
-builder.Services.AddScoped<MinioService>();
+    // -------------------- CONFIGURAR FORM OPTIONS --------------------
+    builder.Services.Configure<FormOptions>(options =>
+    {
+        options.MultipartBodyLengthLimit = 1073741824; // 1 GB
+    });
 
-// Ruta a la carpeta donde están ffmpeg.exe y ffprobe.exe
-var ffmpegPath = Path.Combine(builder.Environment.ContentRootPath, "ffmpeg", "bin");
-FFmpeg.SetExecutablesPath(ffmpegPath);
-
-builder.Services.Configure<FormOptions>(options =>
-{
-    options.MultipartBodyLengthLimit = 1073741824; // 1 GB
-});
-
-// Configurar Kestrel para escuchar en el puerto 5020
-builder.WebHost.ConfigureKestrel(options =>
-{
-    options.Limits.MaxRequestBodySize = 1073741824; // 1 GB
-    options.ListenAnyIP(5020);
-});
-
-
-// -------------------- CONSTRUIR APP --------------------
-
-var app = builder.Build();
-
-//Temporal
-app.UseSwagger();
-app.UseSwaggerUI();
-
-/*
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
-*/
-
-app.UseCors("AllowAll");
-//app.UseHttpsRedirection();
-app.UseAuthentication();
-app.UseAuthorization();
-app.MapControllers();
-
-using var scope = app.Services.CreateScope();
-try
-{
-    var test = scope.ServiceProvider.GetRequiredService<MinioService>();
-    Console.WriteLine("MinioService inyectado correctamente");
+    // -------------------- CONFIGURAR KESTREL --------------------
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.Limits.MaxRequestBodySize = 1073741824; // 1 GB
+        options.ListenAnyIP(5020);
+    });
 }
 catch (Exception ex)
 {
-    Console.WriteLine("Error inyectando MinioService: " + ex.Message);
+    Debug.WriteLine(" Error en configuración de servicios: " + ex.Message);
+    Debug.WriteLine(ex.StackTrace);
 }
 
-app.Run();
+var app = builder.Build();
+
+try
+{
+    // Swagger siempre activo
+    //app.UseSwagger();
+    //app.UseSwaggerUI();
+
+    app.UseCors("AllowAll");
+    app.UseHttpsRedirection();
+    app.UseAuthentication();
+    app.UseAuthorization();
+    app.MapControllers();
+
+    // Test de Minio opcional
+    using var scope = app.Services.CreateScope();
+    try
+    {
+        var test = scope.ServiceProvider.GetRequiredService<MinioService>();
+        Debug.WriteLine(" MinioService inyectado correctamente");
+    }
+    catch (Exception ex)
+    {
+        Debug.WriteLine(" Error inyectando MinioService: " + ex.Message);
+    }
+
+    app.Run();
+}
+catch (Exception ex)
+{
+    Debug.WriteLine(" Error al iniciar la aplicación: " + ex.Message);
+    Debug.WriteLine(ex.StackTrace);
+}

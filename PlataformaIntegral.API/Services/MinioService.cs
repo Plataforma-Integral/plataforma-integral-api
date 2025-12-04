@@ -9,12 +9,15 @@ namespace PlataformaIntegral.API.Services
     {
         private readonly IMinioClient _minioClient;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<MinioService> _logger;
 
-        public MinioService(IMinioClient minioClient, IConfiguration configuration)
+        public MinioService(IMinioClient minioClient, IConfiguration configuration, ILogger<MinioService> logger)
         {
             _minioClient = minioClient;
             _configuration = configuration;
+            _logger = logger;
         }
+
         private static string GetContentTypeFromExtension(string extension)
         {
             return extension.ToLower() switch
@@ -22,34 +25,55 @@ namespace PlataformaIntegral.API.Services
                 ".jpg" or ".jpeg" => "image/jpeg",
                 ".png" => "image/png",
                 ".gif" => "image/gif",
+                ".bmp" => "image/bmp",
+                ".tiff" => "image/tiff",
+                ".ico" => "image/x-icon",
                 ".mp4" => "video/mp4",
                 ".mov" => "video/quicktime",
                 ".avi" => "video/x-msvideo",
+                ".wmv" => "video/x-ms-wmv",
+                ".mkv" => "video/x-matroska",
                 _ => "application/octet-stream"
             };
         }
 
+        // ================================
+        // Asegurar bucket
+        // ================================
+        private async Task EnsureBucketExistsAsync(string bucketName)
+        {
+            try
+            {
+                var found = await _minioClient.BucketExistsAsync(new BucketExistsArgs().WithBucket(bucketName));
+                if (!found)
+                {
+                    await _minioClient.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucketName));
+                    _logger.LogInformation("Bucket {BucketName} creado en MinIO.", bucketName);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error asegurando bucket {BucketName}", bucketName);
+                throw;
+            }
+        }
 
         // ================================
-        //  MÉTODO PRINCIPAL: SUBIR ARCHIVO
+        // SUBIR ARCHIVO (IFormFile)
         // ================================
-        public async Task<string> UploadFileAsync(IFormFile file, string bucketName)
+        public async Task<string> UploadFileAsync(IFormFile file, string bucketName, string? prefix = null)
         {
             if (file == null)
                 throw new ArgumentNullException(nameof(file));
 
-            // Crear nombre único para el objeto
             var extension = Path.GetExtension(file.FileName);
-            var objectKey = $"{Guid.NewGuid()}{extension}";
+            var objectKey = $"{prefix ?? ""}{Guid.NewGuid()}{extension}";
 
             using var stream = file.OpenReadStream();
-
-            // Asegurar que el bucket exista
             await EnsureBucketExistsAsync(bucketName);
 
-            // Fallback robusto para ContentType
             var contentType = string.IsNullOrWhiteSpace(file.ContentType)
-                ? GetContentTypeFromExtension(extension)   // intenta deducirlo por extensión
+                ? GetContentTypeFromExtension(extension)
                 : file.ContentType;
 
             var args = new PutObjectArgs()
@@ -60,28 +84,29 @@ namespace PlataformaIntegral.API.Services
                 .WithContentType(contentType);
 
             await _minioClient.PutObjectAsync(args);
-
-            return objectKey; // lo que guardas en BD
+            return objectKey;
         }
-        // =====================================
-        // OPCIONAL: subir archivo desde Stream
-        // =====================================
-        public async Task<string> UploadFileAsync(Stream fileStream, string originalFileName, string bucketName)
+
+        // ================================
+        // SUBIR ARCHIVO (Stream)
+        // ================================
+        public async Task<string> UploadFileAsync(Stream fileStream, string originalFileName, string bucketName, string? prefix = null)
         {
             var extension = Path.GetExtension(originalFileName);
-            var objectKey = $"{Guid.NewGuid()}{extension}";
+            var objectKey = $"{prefix ?? ""}{Guid.NewGuid()}{extension}";
 
             await EnsureBucketExistsAsync(bucketName);
+
+            var contentType = GetContentTypeFromExtension(extension);
 
             var args = new PutObjectArgs()
                 .WithBucket(bucketName)
                 .WithObject(objectKey)
                 .WithStreamData(fileStream)
-                .WithObjectSize(-1) // tamaño desconocido
-                .WithContentType("application/octet-stream");
+                .WithObjectSize(fileStream.CanSeek ? fileStream.Length : -1)
+                .WithContentType(contentType);
 
             await _minioClient.PutObjectAsync(args);
-
             return objectKey;
         }
 
@@ -90,7 +115,7 @@ namespace PlataformaIntegral.API.Services
         // ================================
         public async Task<Stream> GetFileAsync(string bucketName, string objectKey)
         {
-            MemoryStream memStream = new();
+            var memStream = new MemoryStream();
 
             var args = new GetObjectArgs()
                 .WithBucket(bucketName)
@@ -122,11 +147,19 @@ namespace PlataformaIntegral.API.Services
         // ================================
         public async Task DeleteFileAsync(string bucketName, string objectKey)
         {
-            var args = new RemoveObjectArgs()
-                .WithBucket(bucketName)
-                .WithObject(objectKey);
+            try
+            {
+                var args = new RemoveObjectArgs()
+                    .WithBucket(bucketName)
+                    .WithObject(objectKey);
 
-            await _minioClient.RemoveObjectAsync(args);
+                await _minioClient.RemoveObjectAsync(args);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error eliminando objeto {ObjectKey} en bucket {BucketName}", objectKey, bucketName);
+                throw;
+            }
         }
 
 
@@ -192,22 +225,25 @@ namespace PlataformaIntegral.API.Services
             await DeleteFileAsync(bucket, objectKey);
         }
 
-
-        // ================================
-        // HELPERS
-        // ================================
-        private async Task EnsureBucketExistsAsync(string bucketName)
+        // =================================
+        // MÉTODOS ESPECÍFICOS PARA USUARIOS
+        // =================================
+        public async Task<string> UploadUsuarioImageAsync(IFormFile file)
         {
-            bool exists = await _minioClient.BucketExistsAsync(
-                new BucketExistsArgs().WithBucket(bucketName)
-            );
+            string bucket = _configuration["Minio:Buckets:Users"] ?? "usuarios";
+            return await UploadFileAsync(file, bucket);
+        }
 
-            if (!exists)
-            {
-                await _minioClient.MakeBucketAsync(
-                    new MakeBucketArgs().WithBucket(bucketName)
-                );
-            }
+        public async Task<string> GetUsuarioImageUrlAsync(string objectKey, TimeSpan expiry)
+        {
+            string bucket = _configuration["Minio:Buckets:Users"] ?? "usuarios";
+            return await GetFileUrlAsync(bucket, objectKey, expiry);
+        }
+
+        public async Task DeleteUsuarioImageAsync(string objectKey)
+        {
+            string bucket = _configuration["Minio:Buckets:Users"] ?? "usuarios";
+            await DeleteFileAsync(bucket, objectKey);
         }
     }
 }

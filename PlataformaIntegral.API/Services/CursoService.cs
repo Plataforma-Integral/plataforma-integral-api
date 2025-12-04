@@ -20,6 +20,9 @@ namespace PlataformaIntegral.API.Services
             _storage = storage;
         }
 
+        // ---------------------------
+        // 0. HELPERS
+        // ---------------------------
         private async Task AsignarPortadasPresignadasAsync(IEnumerable<CursoCardDto> cursos)
         {
             TimeSpan expiry = TimeSpan.FromMinutes(60);
@@ -45,6 +48,30 @@ namespace PlataformaIntegral.API.Services
                 });
 
             await Task.WhenAll(tareas);
+        }
+
+        private async Task<bool> ValidarAccesoCursoAsync(int cursoId, int usuarioId, string? rol)
+        {
+            if (string.Equals(rol, "Administrador", StringComparison.OrdinalIgnoreCase))
+                return true;
+
+            if (string.Equals(rol, "Profesor", StringComparison.OrdinalIgnoreCase))
+            {
+                return await _context.Cursos
+                    .AnyAsync(c =>
+                        c.IdProducto == cursoId &&
+                        c.ProfesorCursos.Any(pc => pc.IdProfesor == usuarioId)
+                    );
+            }
+
+            return await _context.Pagos.AnyAsync(p =>
+                p.IdProducto == cursoId &&
+                p.EstadoPago.Nombre == "Aprobado" &&
+                (
+                    (p.Recibo != null && p.Recibo.IdUsuario == usuarioId) ||
+                    (p.IdUsuario == usuarioId)
+                )
+            );
         }
 
 
@@ -300,8 +327,8 @@ namespace PlataformaIntegral.API.Services
                 }
             }
 
-            bool comprado = usuarioId.HasValue
-                ? await _context.Pagos.AnyAsync(c => c.EstadoPago.Nombre == "Aprobado" && c.IdUsuario == usuarioId.Value && c.IdProducto == cursoId)
+            bool tieneAcceso = usuarioId.HasValue
+                ? await ValidarAccesoCursoAsync(cursoId, usuarioId ?? 0, rol)
                 : rol == "Administrador";
 
             var cursoDto = new CursoPaginaDto
@@ -312,7 +339,7 @@ namespace PlataformaIntegral.API.Services
                 PortadaUrl = cursoQuery.PortadaUrl,
                 Precio = cursoQuery.Precio,
                 PrecioPuntos = cursoQuery.PrecioPuntos,
-                Comprado = comprado,
+                Comprado = tieneAcceso,
                 Categorias = cursoQuery.Categorias,
                 FechaCreacion = cursoQuery.FechaCreacion,
                 Profesores = cursoQuery.Profesores.Select(p => new ProfesorSimpleDto
@@ -366,25 +393,13 @@ namespace PlataformaIntegral.API.Services
             if (cursoPre?.CursoPregrabado == null)
                 return new List<Uri>();
 
-            // Validar acceso: pago aprobado
-            bool comprado = await _context.Pagos.AnyAsync(p =>
-                p.IdProducto == cursoId &&
-                p.EstadoPago.Nombre == "Aprobado" &&
-                (
-                    (p.Recibo != null && p.Recibo.IdUsuario == usuarioId) ||
-                    (p.IdUsuario == usuarioId)
-                )
-            );
+            // Validar acceso con helper
+            bool tieneAcceso = await ValidarAccesoCursoAsync(cursoId, usuarioId, rol);
 
-            if(rol != null && rol == "Administrador")
-            {
-                comprado = true;
-            }
-
-            if (!comprado)
+            if (!tieneAcceso)
                 return new List<Uri>();
 
-            // Obtener recursos (solo videos y documentos)
+            // Obtener recursos (videos y documentos)
             var recursos = await _context.Capitulos
                 .Where(cp => cp.IdCursoPregrabado == cursoPre.CursoPregrabado.IdCurso)
                 .SelectMany(cp => cp.Videos.Select(v => new { v.Recurso.Url, Tipo = "videos" })
@@ -392,7 +407,6 @@ namespace PlataformaIntegral.API.Services
                 .ToListAsync();
 
             var urls = new List<Uri>();
-
             TimeSpan expiry = TimeSpan.FromMinutes(minutesExpiry);
 
             foreach (var recurso in recursos)
@@ -404,45 +418,67 @@ namespace PlataformaIntegral.API.Services
             return urls;
         }
 
-        public async Task<VideoDetalleDto?> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutesUrlExpiry, string? rol = null)
+        public async Task<VideoDetalleDto?> ObtenerVideoDetalleAsync(
+    int recursoId, // Id del Recurso, que también es Id del Video
+    int usuarioId,
+    int minutesUrlExpiry,
+    string? rol = null)
         {
-            // 1) Obtener video + curso + recurso
+            // 1) Obtener video + recurso + curso
             var videoData = await _context.Videos
-                .Where(v => v.IdRecurso == videoId)
+                .AsNoTracking()
+                .Where(v => v.IdRecurso == recursoId) // relación 1:1
                 .Select(v => new
                 {
                     v.IdRecurso,
                     v.Recurso.Nombre,
                     v.Descripcion,
+                    v.DuracionSegundos,
+                    v.PesoBytes,
+                    v.MiniaturaUrl,
                     v.Recurso.Url,
-                    CursoId = v.Capitulo.CursoPregrabado.Curso.IdProducto
+                    CursoId = v.Capitulo.CursoPregrabado.Curso.IdProducto,
+                    NumeroOrdenVideo = v.NumeroOrden,
+                    NumeroOrdenCapitulo = v.Capitulo.NumeroOrden
                 })
                 .FirstOrDefaultAsync();
+
             if (videoData == null)
                 return null;
-            // 2) Validar acceso del usuario al curso
-            bool tieneAcceso = await _context.Pagos.AnyAsync(p =>
-                p.IdProducto == videoData.CursoId &&
-                p.EstadoPago.Nombre == "Aprobado" &&
-                (
-                    (p.Recibo != null && p.Recibo.IdUsuario == usuarioId) ||
-                    (p.IdUsuario == usuarioId)
-                )
-            );
+
+            // 2) Determinar si es el primer video del curso
+            var primerVideoId = await _context.Videos
+                .Where(v => v.Capitulo.CursoPregrabado.Curso.IdProducto == videoData.CursoId)
+                .OrderBy(v => v.Capitulo.NumeroOrden)
+                .ThenBy(v => v.NumeroOrden)
+                .Select(v => v.IdRecurso)
+                .FirstOrDefaultAsync();
+
+            bool esPrimerVideo = videoData.IdRecurso == primerVideoId;
+
+            // 3) Validar acceso del usuario al curso (excepto si es el primer video)
+            bool tieneAcceso = esPrimerVideo || await ValidarAccesoCursoAsync(videoData.CursoId, usuarioId, rol);
 
             if (!tieneAcceso)
                 return null;
-            // 3) Generar URL presignada
-            TimeSpan urlExpiry = TimeSpan.FromMinutes(minutesUrlExpiry);
+
+            // 4) Generar URL presignada
+            var urlExpiry = TimeSpan.FromMinutes(minutesUrlExpiry);
             var presignedUrl = await _storage.GetVideoUrlAsync(videoData.Url, urlExpiry);
-            // 4) Construir DTO
+            var miniaturaUrl = await _storage.GetMiniaturaUrlAsync(videoData.MiniaturaUrl, urlExpiry);
+
+            // 5) Construir DTO
             var videoDetalleDto = new VideoDetalleDto
             {
                 Id = videoData.IdRecurso,
                 Titulo = videoData.Nombre,
                 Descripcion = videoData.Descripcion,
-                PresignedUrl = presignedUrl
+                Duracion = TimeSpan.FromSeconds((double)videoData.DuracionSegundos),
+                MiniaturaUrl = miniaturaUrl,
+                PesoBytes = videoData.PesoBytes,
+                VideoUrl = presignedUrl
             };
+
             return videoDetalleDto;
         }
 

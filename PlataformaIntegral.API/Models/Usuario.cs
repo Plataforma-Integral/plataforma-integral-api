@@ -70,12 +70,14 @@ public partial class Usuario
     [Column("fecha_registro", TypeName = "datetime")]
     public DateTime? FechaRegistro { get; set; }
 
+    [Column("imagen_bucket_name")]
+    [StringLength(200)]
+    [Unicode(false)]
+    public string? ImagenBucketName { get; set; }
+
     public virtual Administrador? Administrador { get; set; }
-
     public virtual ConfiguracionPrivacidad? ConfiguracionPrivacidad { get; set; }
-
     public virtual ICollection<Credencial> Credenciales { get; set; } = new List<Credencial>();
-
     public virtual Estudiante? Estudiante { get; set; }
 
     [ForeignKey("IdPais")]
@@ -85,10 +87,7 @@ public partial class Usuario
     public virtual TipoUsuario? TipoUsuario { get; set; }
 
     public virtual ICollection<Pago> Pagos { get; set; } = new List<Pago>();
-
     public virtual Profesor? Profesor { get; set; }
-
     public virtual ICollection<Recibo> Recibos { get; set; } = new List<Recibo>();
-
     public virtual ICollection<Suscripcion> Suscripciones { get; set; } = new List<Suscripcion>();
 }

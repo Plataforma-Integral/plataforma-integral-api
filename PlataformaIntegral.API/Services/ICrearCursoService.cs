@@ -5,6 +5,7 @@ namespace PlataformaIntegral.API.Services
 {
     public interface ICrearCursoService
     {
+
         // ---------------------------------------------------------
         // 1. CREACIÓN
         // ---------------------------------------------------------

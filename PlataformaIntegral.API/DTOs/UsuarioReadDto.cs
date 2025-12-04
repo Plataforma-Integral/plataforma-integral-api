@@ -1,7 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using PlataformaIntegral.API.Models;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
 
 namespace PlataformaIntegral.API.DTOs
 {
@@ -45,6 +42,11 @@ namespace PlataformaIntegral.API.DTOs
         public DateTime? FechaRegistro { get; set; }
 
         public ConfigPrivacidadReadDto? ConfiguracionPrivacidad { get; set; }
+
+        /// <summary>
+        /// URL pública (presignada) para acceder a la imagen de perfil.
+        /// </summary>
+        public string? ImagenUrl { get; set; }
 
         // Nota: No incluir la propiedad Credencial para evitar exponer contraseñas
     }

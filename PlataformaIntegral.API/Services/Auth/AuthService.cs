@@ -18,6 +18,7 @@ namespace PlataformaIntegral.API.Services.Auth
         private readonly PlataformaIntegralContext _context;
         private readonly IConfiguration _config;
         private readonly IMapper _mapper;
+        private readonly MinioService _minioService;
 
         public AuthService(PlataformaIntegralContext context, IConfiguration config, IMapper mapper)
         {
@@ -37,17 +38,30 @@ namespace PlataformaIntegral.API.Services.Auth
             {
                 return null;
             }
+
             if (credencial.Contrasena == null ||
-                !BCrypt.Net.BCrypt.Verify(dto.Contrasena, credencial.Contrasena)){
-                AuthResponseDto authResponseDto = new AuthResponseDto()
+                !BCrypt.Net.BCrypt.Verify(dto.Contrasena, credencial.Contrasena))
+            {
+                return new AuthResponseDto
                 {
                     Success = false,
                     Message = "Credenciales inválidas"
                 };
-                return authResponseDto;
             }
 
-            return GenerateToken(credencial.Usuario);
+            // Generar token y respuesta
+            var response = GenerateToken(credencial.Usuario);
+
+            // Obtener imagen del usuario si existe
+            if (!string.IsNullOrEmpty(credencial.Usuario.ImagenBucketName))
+            {
+                response.ImagenUrl = await _minioService.GetUsuarioImageUrlAsync(
+                    credencial.Usuario.ImagenBucketName,
+                    TimeSpan.FromHours(1) // expira en 1 hora
+                );
+            }
+
+            return response;
         }
 
 
@@ -99,7 +113,7 @@ namespace PlataformaIntegral.API.Services.Auth
                     _context.Estudiantes.Add(new Estudiante
                     {
                         IdUsuario = usuario.IdUsuario,
-                        Educacion = dto.Educacion,
+                        Educacion = dto.NivelEducativo,
                         Puntos = 0
                     });
                     break;

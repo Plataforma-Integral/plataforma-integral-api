@@ -48,14 +48,37 @@ public class CrearCursoService : ICrearCursoService
                 Producto = producto
             };
 
+            string? portadaUrl = null;
+
+            if (dto.Portada != null)
+            {
+                // Validar extensión y MIME type
+                var extensionesPermitidas = new[] { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".ico" };
+                var extension = Path.GetExtension(dto.Portada.FileName).ToLowerInvariant();
+
+                if (!extensionesPermitidas.Contains(extension))
+                {
+                    throw new InvalidOperationException(
+                        $"Formato de imagen no permitido: {extension}. Solo se aceptan {string.Join(", ", extensionesPermitidas)}");
+                }
+
+                // Opcional: validar MIME type también
+                var mimePermitidos = new[] { "image/jpeg", "image/png", "image/bmp", "image/gif", "image/tiff", "image/x-icon" };
+                if (!mimePermitidos.Contains(dto.Portada.ContentType.ToLowerInvariant()))
+                {
+                    throw new InvalidOperationException(
+                        $"Tipo MIME no permitido: {dto.Portada.ContentType}. Solo se aceptan {string.Join(", ", mimePermitidos)}");
+                }
+
+                portadaUrl = await _storage.UploadImageAsync(dto.Portada);
+            }
+
             var cursoPregrabado = new CursoPregrabado
             {
                 IdCurso = curso.IdProducto,
                 Curso = curso,
                 PrecioPuntos = dto.PrecioPuntos,
-                UrlPortada = dto.Portada != null
-                    ? await _storage.UploadImageAsync(dto.Portada)
-                    : null
+                UrlPortada = portadaUrl
             };
 
             _context.CursoPregrabados.Add(cursoPregrabado);
@@ -80,20 +103,48 @@ public class CrearCursoService : ICrearCursoService
     // ========================================
     public async Task<int> AgregarCapituloAsync(int cursoPregrabadoId, string nombreCapitulo)
     {
-        var numero = await _context.Capitulos
-            .CountAsync(c => c.IdCursoPregrabado == cursoPregrabadoId) + 1;
+        if (string.IsNullOrWhiteSpace(nombreCapitulo))
+            throw new ArgumentException("El nombre del capítulo no puede estar vacío.", nameof(nombreCapitulo));
 
-        var capitulo = new Capitulo
+        if (nombreCapitulo.Length > 200)
+            throw new ArgumentException("El nombre del capítulo excede la longitud máxima permitida (200 caracteres).", nameof(nombreCapitulo));
+
+        using var transaction = await _context.Database.BeginTransactionAsync();
+
+        try
         {
-            IdCursoPregrabado = cursoPregrabadoId,
-            Nombre = nombreCapitulo,
-            NumeroOrden = numero
-        };
+            // Validar que el curso pregrabado exista
+            var cursoPregrabado = await _context.CursoPregrabados
+                .FirstOrDefaultAsync(cp => cp.IdCurso == cursoPregrabadoId);
 
-        _context.Capitulos.Add(capitulo);
-        await _context.SaveChangesAsync();
+            if (cursoPregrabado == null)
+                throw new InvalidOperationException($"Curso pregrabado con ID {cursoPregrabadoId} no encontrado.");
 
-        return capitulo.IdCapitulo;
+            // Calcular número de orden
+            var numero = await _context.Capitulos
+                .CountAsync(c => c.IdCursoPregrabado == cursoPregrabadoId) + 1;
+
+            var capitulo = new Capitulo
+            {
+                IdCursoPregrabado = cursoPregrabadoId,
+                Nombre = nombreCapitulo.Trim(),
+                NumeroOrden = numero
+            };
+
+            _context.Capitulos.Add(capitulo);
+            await _context.SaveChangesAsync();
+
+            await transaction.CommitAsync();
+            return capitulo.IdCapitulo;
+        }
+        catch
+        {
+            if (transaction.GetDbTransaction()?.Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
+            throw;
+        }
     }
 
     // ========================================
@@ -105,7 +156,23 @@ public class CrearCursoService : ICrearCursoService
 
         try
         {
-            // 1) Subir video a MinIO
+            // 1) Validar formato de video
+            var extensionesVideoPermitidas = new[] { ".mp4", ".mov", ".avi", ".wmv", ".mkv" };
+            var extensionVideo = Path.GetExtension(dto.Archivo.FileName).ToLowerInvariant();
+            if (!extensionesVideoPermitidas.Contains(extensionVideo))
+            {
+                throw new InvalidOperationException(
+                    $"Formato de video no permitido: {extensionVideo}. Solo se aceptan {string.Join(", ", extensionesVideoPermitidas)}");
+            }
+
+            var mimeVideoPermitidos = new[] { "video/mp4", "video/x-msvideo", "video/x-ms-wmv", "video/quicktime", "video/x-matroska" };
+            if (!mimeVideoPermitidos.Contains(dto.Archivo.ContentType.ToLowerInvariant()))
+            {
+                throw new InvalidOperationException(
+                    $"Tipo MIME de video no permitido: {dto.Archivo.ContentType}. Solo se aceptan {string.Join(", ", mimeVideoPermitidos)}");
+            }
+
+            // 2) Subir video a MinIO
             string videoKey = await _storage.UploadVideoAsync(dto.Archivo);
 
             // Guardar temporalmente para procesar con FFmpeg
@@ -115,28 +182,42 @@ public class CrearCursoService : ICrearCursoService
                 await dto.Archivo.CopyToAsync(stream);
             }
 
-
-            // 2) Obtener duración y peso
+            // 3) Obtener duración y peso
             var mediaInfo = await FFmpeg.GetMediaInfo(tempVideoPath);
             var duracion = (int)mediaInfo.Duration.TotalSeconds;
             var peso = new FileInfo(tempVideoPath).Length;
 
-            // 3) Miniatura
+            // 4) Miniatura
             string miniaturaKey;
-            if (dto.Miniatura != null) // ojo: usa PascalCase en la propiedad
+            if (dto.Miniatura != null)
             {
+                // Validar formato de miniatura
+                var extensionesImgPermitidas = new[] { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".ico" };
+                var extensionImg = Path.GetExtension(dto.Miniatura.FileName).ToLowerInvariant();
+                if (!extensionesImgPermitidas.Contains(extensionImg))
+                {
+                    throw new InvalidOperationException(
+                        $"Formato de imagen no permitido: {extensionImg}. Solo se aceptan {string.Join(", ", extensionesImgPermitidas)}");
+                }
+
+                var mimeImgPermitidos = new[] { "image/jpeg", "image/png", "image/bmp", "image/gif", "image/tiff", "image/x-icon" };
+                if (!mimeImgPermitidos.Contains(dto.Miniatura.ContentType.ToLowerInvariant()))
+                {
+                    throw new InvalidOperationException(
+                        $"Tipo MIME de imagen no permitido: {dto.Miniatura.ContentType}. Solo se aceptan {string.Join(", ", mimeImgPermitidos)}");
+                }
+
                 miniaturaKey = await _storage.UploadMiniaturaAsync(dto.Miniatura);
             }
             else
             {
+                // Generar miniatura automática en JPG
                 var tempThumbPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.jpg");
                 var conversion = FFmpeg.Conversions.New()
                     .AddParameter($"-ss {duracion / 2} -i {tempVideoPath} -frames:v 1 {tempThumbPath}");
                 await conversion.Start();
 
                 using var thumbStream = new FileStream(tempThumbPath, FileMode.Open, FileAccess.Read);
-
-                // Aquí construyes el FormFile con ContentType y Headers válidos
                 var formFile = new FormFile(thumbStream, 0, thumbStream.Length, "miniatura", Path.GetFileName(tempThumbPath))
                 {
                     Headers = new HeaderDictionary(),
@@ -146,22 +227,23 @@ public class CrearCursoService : ICrearCursoService
                 miniaturaKey = await _storage.UploadMiniaturaAsync(formFile);
             }
 
-            // 4) Crear entidad Recurso
+            // 5) Crear entidad Recurso
             var recurso = new Recurso
             {
                 Nombre = dto.Nombre,
-                Url = videoKey,
+                Url = videoKey
             };
 
             _context.Recursos.Add(recurso);
             await _context.SaveChangesAsync();
 
-            // 5) Crear entidad Video
+            // 6) Crear entidad Video
             var numeroOrden = await _context.Videos
                 .CountAsync(v => v.IdCapitulo == capituloId) + 1;
 
             var video = new Video
             {
+                Descripcion = dto.Descripcion,
                 IdCapitulo = capituloId,
                 IdRecurso = recurso.IdRecurso,
                 NumeroOrden = numeroOrden,
@@ -186,19 +268,46 @@ public class CrearCursoService : ICrearCursoService
         }
     }
 
+
     // ========================================
     // 4. PUBLICAR CURSO
     // ========================================
     public async Task PublicarCursoAsync(int cursoId)
     {
-        var curso = await _context.Cursos.FindAsync(cursoId);
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        if (curso == null)
-            throw new Exception($"Curso {cursoId} no encontrado.");
+        try
+        {
+            var curso = await _context.Cursos.FindAsync(cursoId);
 
-        curso.Estado = EstadoCursoEnum.Publicado;
+            if (curso == null)
+                throw new InvalidOperationException($"Curso con ID {cursoId} no encontrado.");
 
-        await _context.SaveChangesAsync();
+            // Validar estado actual
+            if (curso.Estado == EstadoCursoEnum.Publicado)
+                throw new InvalidOperationException($"El curso {cursoId} ya está publicado.");
+
+            if (curso.Estado == EstadoCursoEnum.Borrador || curso.Estado == EstadoCursoEnum.PendienteRevision)
+            {
+                curso.Estado = EstadoCursoEnum.Publicado;
+            }
+            else
+            {
+                throw new InvalidOperationException(
+                    $"El curso {cursoId} no puede publicarse desde el estado {curso.Estado}.");
+            }
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            if (transaction.GetDbTransaction()?.Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
+            throw;
+        }
     }
 
     public async Task ModificarCursoPregrabadoAsync(int cursoId, CursoPregrabadoDto dto)
@@ -213,20 +322,47 @@ public class CrearCursoService : ICrearCursoService
                 .FirstOrDefaultAsync(c => c.IdProducto == cursoId);
 
             if (curso == null)
-                throw new Exception($"Curso {cursoId} no encontrado.");
+                throw new InvalidOperationException($"Curso {cursoId} no encontrado.");
+
+            // Validar precios
+            if (dto.Precio < 0)
+                throw new InvalidOperationException("El precio no puede ser negativo.");
+            if (dto.PrecioPuntos < 0)
+                throw new InvalidOperationException("El precio en puntos no puede ser negativo.");
 
             // Producto
-            curso.Producto.Nombre = dto.Titulo ?? curso.Producto.Nombre;
-            curso.Producto.Descripcion = dto.Descripcion ?? curso.Producto.Descripcion;
-            curso.Producto.Precio = dto.Precio != 0 ? dto.Precio : curso.Producto.Precio;
+            if (!string.IsNullOrWhiteSpace(dto.Titulo))
+                curso.Producto.Nombre = dto.Titulo;
+
+            if (!string.IsNullOrWhiteSpace(dto.Descripcion))
+                curso.Producto.Descripcion = dto.Descripcion;
+
+            if (dto.Precio > 0)
+                curso.Producto.Precio = dto.Precio;
 
             // CursoPregrabado
-            curso.CursoPregrabado.PrecioPuntos =
-                dto.PrecioPuntos != 0 ? dto.PrecioPuntos : curso.CursoPregrabado.PrecioPuntos;
+            if (dto.PrecioPuntos > 0)
+                curso.CursoPregrabado.PrecioPuntos = dto.PrecioPuntos;
 
             // Portada nueva?
             if (dto.Portada != null)
             {
+                var extensionesPermitidas = new[] { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".ico" };
+                var extension = Path.GetExtension(dto.Portada.FileName).ToLowerInvariant();
+
+                if (!extensionesPermitidas.Contains(extension))
+                {
+                    throw new InvalidOperationException(
+                        $"Formato de imagen no permitido: {extension}. Solo se aceptan {string.Join(", ", extensionesPermitidas)}");
+                }
+
+                var mimePermitidos = new[] { "image/jpeg", "image/png", "image/bmp", "image/gif", "image/tiff", "image/x-icon" };
+                if (!mimePermitidos.Contains(dto.Portada.ContentType.ToLowerInvariant()))
+                {
+                    throw new InvalidOperationException(
+                        $"Tipo MIME no permitido: {dto.Portada.ContentType}. Solo se aceptan {string.Join(", ", mimePermitidos)}");
+                }
+
                 var nuevaKey = await _storage.UploadImageAsync(dto.Portada);
                 curso.CursoPregrabado.UrlPortada = nuevaKey;
             }
@@ -236,7 +372,7 @@ public class CrearCursoService : ICrearCursoService
         }
         catch
         {
-            if (transaction.GetDbTransaction().Connection != null)
+            if (transaction.GetDbTransaction()?.Connection != null)
             {
                 await transaction.RollbackAsync();
             }
@@ -246,14 +382,35 @@ public class CrearCursoService : ICrearCursoService
 
     public async Task ModificarCapituloAsync(int capituloId, string nuevoNombre)
     {
-        var capitulo = await _context.Capitulos.FindAsync(capituloId);
+        if (string.IsNullOrWhiteSpace(nuevoNombre))
+            throw new ArgumentException("El nuevo nombre del capítulo no puede estar vacío.", nameof(nuevoNombre));
 
-        if (capitulo == null)
-            throw new Exception($"Capítulo {capituloId} no encontrado.");
+        using var transaction = await _context.Database.BeginTransactionAsync();
 
-        capitulo.Nombre = nuevoNombre;
+        try
+        {
+            var capitulo = await _context.Capitulos.FindAsync(capituloId);
 
-        await _context.SaveChangesAsync();
+            if (capitulo == null)
+                throw new InvalidOperationException($"Capítulo con ID {capituloId} no encontrado.");
+
+            // Validar longitud máxima (ejemplo: 200 caracteres)
+            if (nuevoNombre.Length > 200)
+                throw new ArgumentException("El nombre del capítulo excede la longitud máxima permitida (200 caracteres).", nameof(nuevoNombre));
+
+            capitulo.Nombre = nuevoNombre.Trim();
+
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch
+        {
+            if (transaction.GetDbTransaction()?.Connection != null)
+            {
+                await transaction.RollbackAsync();
+            }
+            throw;
+        }
     }
 
     public async Task ModificarVideoAsync(int videoId, VideoDto dto)
@@ -267,15 +424,25 @@ public class CrearCursoService : ICrearCursoService
                 .FirstOrDefaultAsync(v => v.IdRecurso == videoId);
 
             if (video == null)
-                throw new Exception($"Video {videoId} no encontrado.");
+                throw new InvalidOperationException($"Video con ID {videoId} no encontrado.");
 
             // 1. Cambiar nombre
             if (!string.IsNullOrWhiteSpace(dto.Nombre))
-                video.Recurso.Nombre = dto.Nombre;
+                video.Recurso.Nombre = dto.Nombre.Trim();
 
             // 2. ¿Reemplazar archivo?
             if (dto.Archivo != null)
             {
+                // Validar formato de video
+                var extensionesVideoPermitidas = new[] { ".mp4", ".mov", ".avi", ".wmv", ".mkv" };
+                var extensionVideo = Path.GetExtension(dto.Archivo.FileName).ToLowerInvariant();
+                if (!extensionesVideoPermitidas.Contains(extensionVideo))
+                    throw new InvalidOperationException($"Formato de video no permitido: {extensionVideo}");
+
+                var mimeVideoPermitidos = new[] { "video/mp4", "video/x-msvideo", "video/x-ms-wmv", "video/quicktime", "video/x-matroska" };
+                if (!mimeVideoPermitidos.Contains(dto.Archivo.ContentType.ToLowerInvariant()))
+                    throw new InvalidOperationException($"Tipo MIME de video no permitido: {dto.Archivo.ContentType}");
+
                 // Subir nuevo video
                 var newKey = await _storage.UploadVideoAsync(dto.Archivo);
                 video.Recurso.Url = newKey;
@@ -295,6 +462,16 @@ public class CrearCursoService : ICrearCursoService
                 // Miniatura
                 if (dto.Miniatura != null)
                 {
+                    // Validar formato de miniatura
+                    var extensionesImgPermitidas = new[] { ".jpg", ".jpeg", ".png", ".bmp", ".gif", ".tiff", ".ico" };
+                    var extensionImg = Path.GetExtension(dto.Miniatura.FileName).ToLowerInvariant();
+                    if (!extensionesImgPermitidas.Contains(extensionImg))
+                        throw new InvalidOperationException($"Formato de imagen no permitido: {extensionImg}");
+
+                    var mimeImgPermitidos = new[] { "image/jpeg", "image/png", "image/bmp", "image/gif", "image/tiff", "image/x-icon" };
+                    if (!mimeImgPermitidos.Contains(dto.Miniatura.ContentType.ToLowerInvariant()))
+                        throw new InvalidOperationException($"Tipo MIME de imagen no permitido: {dto.Miniatura.ContentType}");
+
                     video.MiniaturaUrl = await _storage.UploadImageAsync(dto.Miniatura);
                 }
                 else
@@ -304,10 +481,22 @@ public class CrearCursoService : ICrearCursoService
                         .AddParameter($"-ss {video.DuracionSegundos / 2} -i {tempVideoPath} -frames:v 1 {tempThumbPath}");
                     await conversion.Start();
 
-                    using var thumbStream = new FileStream(tempThumbPath, FileMode.Open);
-                    var formFile = new FormFile(thumbStream, 0, thumbStream.Length, null, Path.GetFileName(tempThumbPath));
+                    using var thumbStream = new FileStream(tempThumbPath, FileMode.Open, FileAccess.Read);
+                    var formFile = new FormFile(thumbStream, 0, thumbStream.Length, "miniatura", Path.GetFileName(tempThumbPath))
+                    {
+                        Headers = new HeaderDictionary(),
+                        ContentType = "image/jpeg"
+                    };
+
                     video.MiniaturaUrl = await _storage.UploadImageAsync(formFile);
                 }
+
+                // Limpieza opcional de archivos temporales
+                try
+                {
+                    if (File.Exists(tempVideoPath)) File.Delete(tempVideoPath);
+                }
+                catch { /* Ignorar errores de limpieza */ }
             }
 
             await _context.SaveChangesAsync();
@@ -315,14 +504,13 @@ public class CrearCursoService : ICrearCursoService
         }
         catch
         {
-            if (transaction.GetDbTransaction().Connection != null)
+            if (transaction.GetDbTransaction()?.Connection != null)
             {
                 await transaction.RollbackAsync();
             }
             throw;
         }
     }
-
 
     public async Task EliminarVideoAsync(int videoId)
     {
@@ -332,29 +520,40 @@ public class CrearCursoService : ICrearCursoService
         {
             var video = await _context.Videos
                 .Include(v => v.Recurso)
-                .FirstOrDefaultAsync(v => v.IdRecurso == videoId);
+                .FirstOrDefaultAsync(v => v.IdRecurso == videoId); // usar IdVideo, no IdRecurso
 
             if (video == null)
-                throw new Exception($"Video {videoId} no encontrado.");
+                throw new InvalidOperationException($"Video con ID {videoId} no encontrado.");
 
             var keyVideo = video.Recurso.Url;
             var keyMiniatura = video.MiniaturaUrl;
 
+            // Primero eliminar en BD
             _context.Recursos.Remove(video.Recurso);
             _context.Videos.Remove(video);
 
             await _context.SaveChangesAsync();
 
-            // Eliminar físicamente del bucket
-            await _storage.DeleteVideoAsync(keyVideo);
-            if (!string.IsNullOrEmpty(keyMiniatura))
-                 await _storage.DeleteMiniaturaAsync(keyMiniatura);
+            // Luego intentar eliminar físicamente del bucket
+            try
+            {
+                if (!string.IsNullOrEmpty(keyVideo))
+                    await _storage.DeleteVideoAsync(keyVideo);
+
+                if (!string.IsNullOrEmpty(keyMiniatura))
+                    await _storage.DeleteMiniaturaAsync(keyMiniatura);
+            }
+            catch (Exception ex)
+            {
+                // Aquí puedes loguear el error sin romper la transacción
+                // Ejemplo: _logger.LogError(ex, "Error eliminando archivos del bucket");
+            }
 
             await transaction.CommitAsync();
         }
         catch
         {
-            if (transaction.GetDbTransaction().Connection != null)
+            if (transaction.GetDbTransaction()?.Connection != null)
             {
                 await transaction.RollbackAsync();
             }
@@ -375,34 +574,24 @@ public class CrearCursoService : ICrearCursoService
                 .FirstOrDefaultAsync(c => c.IdCapitulo == capituloId);
 
             if (capitulo == null)
-                throw new Exception($"Capítulo {capituloId} no encontrado.");
+                throw new InvalidOperationException($"Capítulo con ID {capituloId} no encontrado.");
 
             var cursoId = capitulo.IdCursoPregrabado;
 
             // =====================================
-            // 1. Eliminar videos y recursos
+            // 1. Eliminar videos y recursos (BD primero)
             // =====================================
             foreach (var video in capitulo.Videos)
             {
-                var key = video.Recurso.Url;
-                var miniaturaKey = video.MiniaturaUrl;
-
                 _context.Recursos.Remove(video.Recurso);
                 _context.Videos.Remove(video);
-
-                await _storage.DeleteVideoAsync(key);
-                if (!string.IsNullOrEmpty(miniaturaKey))
-                    await _storage.DeleteMiniaturaAsync(miniaturaKey);
             }
 
-            // =====================================
-            // 2. Eliminar capítulo
-            // =====================================
             _context.Capitulos.Remove(capitulo);
             await _context.SaveChangesAsync();
 
             // =====================================
-            // 3. Reordenar capítulos restantes
+            // 2. Reordenar capítulos restantes
             // =====================================
             var capitulosRestantes = await _context.Capitulos
                 .Where(c => c.IdCursoPregrabado == cursoId)
@@ -416,11 +605,32 @@ public class CrearCursoService : ICrearCursoService
             }
 
             await _context.SaveChangesAsync();
+
+            // =====================================
+            // 3. Eliminar físicamente del bucket (fuera de la transacción)
+            // =====================================
+            foreach (var video in capitulo.Videos)
+            {
+                try
+                {
+                    if (!string.IsNullOrEmpty(video.Recurso.Url))
+                        await _storage.DeleteVideoAsync(video.Recurso.Url);
+
+                    if (!string.IsNullOrEmpty(video.MiniaturaUrl))
+                        await _storage.DeleteMiniaturaAsync(video.MiniaturaUrl);
+                }
+                catch (Exception ex)
+                {
+                    // Loguear el error sin romper la transacción
+                    // Ejemplo: _logger.LogError(ex, $"Error eliminando archivos del bucket para video {video.IdVideo}");
+                }
+            }
+
             await transaction.CommitAsync();
         }
         catch
         {
-            if (transaction.GetDbTransaction().Connection != null)
+            if (transaction.GetDbTransaction()?.Connection != null)
             {
                 await transaction.RollbackAsync();
             }
@@ -434,9 +644,7 @@ public class CrearCursoService : ICrearCursoService
 
         try
         {
-            // =========================================
-            // 1. Cargar curso + producto + pregrabado
-            // =========================================
+            // 1. Cargar curso completo
             var curso = await _context.Cursos
                 .Include(c => c.Producto)
                 .Include(c => c.CursoPregrabado)
@@ -446,74 +654,67 @@ public class CrearCursoService : ICrearCursoService
                 .FirstOrDefaultAsync(c => c.IdProducto == cursoId);
 
             if (curso == null)
-                throw new Exception($"El curso {cursoId} no existe.");
+                throw new InvalidOperationException($"El curso con ID {cursoId} no existe.");
 
-            // =========================================
-            // 2. Si tiene portada → eliminar archivo MinIO
-            // =========================================
-            if (curso.CursoPregrabado?.UrlPortada != null)
-            {
-                try
-                {
-                    // borrar físicamente del bucket
-                     await _storage.DeleteImageAsync(curso.CursoPregrabado.UrlPortada);
-                }
-                catch
-                {
-                    // opcional: log
-                }
-            }
+            // 2. Eliminar portada (solo BD, storage después)
+            var portadaKey = curso.CursoPregrabado?.UrlPortada;
 
-            // =========================================
-            // 3. Eliminar capítulos → videos → recursos
-            // =========================================
+            // 3. Eliminar capítulos, videos y recursos (solo BD)
             var capitulos = curso.CursoPregrabado?.Capitulos?.ToList() ?? new List<Capitulo>();
+            var videosKeys = new List<(string? videoKey, string? miniaturaKey)>();
 
             foreach (var capitulo in capitulos)
             {
                 foreach (var video in capitulo.Videos)
                 {
-                    var keyVideo = video.Recurso.Url;
-                    var keyMiniatura = video.MiniaturaUrl;
+                    videosKeys.Add((video.Recurso.Url, video.MiniaturaUrl));
 
                     _context.Recursos.Remove(video.Recurso);
                     _context.Videos.Remove(video);
-
-                    await _storage.DeleteVideoAsync(keyVideo);
-                    if (!string.IsNullOrEmpty(keyMiniatura))
-                         await _storage.DeleteMiniaturaAsync(keyMiniatura);
                 }
-
 
                 _context.Capitulos.Remove(capitulo);
             }
 
-            // =========================================
-            // 4. Eliminar el curso pregrabado
-            // =========================================
+            // 4. Eliminar curso pregrabado
             if (curso.CursoPregrabado != null)
                 _context.CursoPregrabados.Remove(curso.CursoPregrabado);
 
-            // =========================================
-            // 5. Eliminar el curso
-            // =========================================
+            // 5. Eliminar curso
             _context.Cursos.Remove(curso);
 
-            // =========================================
             // 6. Eliminar producto asociado
-            // =========================================
             if (curso.Producto != null)
                 _context.Productos.Remove(curso.Producto);
 
-            // =========================================
-            // 7. Guardar y confirmar transacción
-            // =========================================
+            // 7. Guardar cambios en BD
             await _context.SaveChangesAsync();
             await transaction.CommitAsync();
+
+            // 8. Eliminar físicamente del bucket (fuera de la transacción)
+            try
+            {
+                if (!string.IsNullOrEmpty(portadaKey))
+                    await _storage.DeleteImageAsync(portadaKey);
+
+                foreach (var (videoKey, miniaturaKey) in videosKeys)
+                {
+                    if (!string.IsNullOrEmpty(videoKey))
+                        await _storage.DeleteVideoAsync(videoKey);
+
+                    if (!string.IsNullOrEmpty(miniaturaKey))
+                        await _storage.DeleteMiniaturaAsync(miniaturaKey);
+                }
+            }
+            catch (Exception ex)
+            {
+                // Aquí puedes loguear el error sin romper la eliminación en BD
+                // Ejemplo: _logger.LogError(ex, $"Error eliminando archivos del bucket para curso {cursoId}");
+            }
         }
         catch
         {
-            if (transaction.GetDbTransaction().Connection != null)
+            if (transaction.GetDbTransaction()?.Connection != null)
             {
                 await transaction.RollbackAsync();
             }

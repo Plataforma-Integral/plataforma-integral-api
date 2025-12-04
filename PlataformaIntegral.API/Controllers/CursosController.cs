@@ -127,7 +127,7 @@ namespace PlataformaIntegral.API.Controllers
         // 8. OBTENER DETALLES DEL VIDEO
         // --------------------------------------
         [HttpGet("videos/{videoId}/stream")]
-        public async Task<IActionResult> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutosExpiracion)
+        public async Task<IActionResult> ObtenerVideoDetalleAsync(int videoId, int usuarioId, int minutosExpiracion = 60)
         {
             var userId = int.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
             var userRole = User.FindFirst(ClaimTypes.Role)?.Value;

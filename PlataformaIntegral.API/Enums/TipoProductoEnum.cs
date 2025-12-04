@@ -1,8 +1,11 @@
 ﻿namespace PlataformaIntegral.API.Enums
 {
+    /// <summary>
+    /// Tipos de productos disponibles en la plataforma.
+    /// </summary>
     public enum TipoProductoEnum
     {
-        TipoSuscripcion = 0,
-        Curso = 1
+        Suscripcion = 0, // Plan de suscripción
+        Curso = 1        // Curso individual
     }
 }
