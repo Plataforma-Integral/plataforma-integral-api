@@ -7,6 +7,7 @@ using PlataformaIntegral.API.Helpers;
 using PlataformaIntegral.API.Models;
 using PlataformaIntegral.API.Services;
 using PlataformaIntegral.API.Services.Auth;
+using PlataformaIntegral.API.Services.PlataformaIntegral.API.Services;
 using System.Diagnostics;
 using System.Text;
 using Xabe.FFmpeg;
@@ -68,6 +69,8 @@ try
     builder.Services.AddScoped<ICursoService, CursoService>();
     builder.Services.AddScoped<ICatalogoService, CatalogoService>();
     builder.Services.AddScoped<MinioService>();
+    builder.Services.AddScoped<ICompraService, ComprasService>();
+
 
     // -------------------- JWT --------------------
     var jwtKey = builder.Configuration["Jwt:Key"] ?? "quALEgRangrefULPAlMINGentIcHINFe";
